@@ -7,6 +7,7 @@ import {
   AcceptBlindOfferDto,
 } from './blind-offers.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { SyncGuard } from '../../guards/sync.guard.js';
 
 @ApiTags('blind-offers')
 @Controller('blind-offers')
@@ -42,7 +43,7 @@ export class BlindOffersController {
   }
 
   @Post()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Submit a blind offer on an asset (buyer)' })
   create(@CurrentUser() user: { address: string }, @Body() dto: CreateBlindOfferDto) {
@@ -66,7 +67,7 @@ export class BlindOffersController {
   }
 
   @Post(':id/accept')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Accept a blind offer (seller — provides signed PSBT)' })
   accept(

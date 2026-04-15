@@ -14,6 +14,7 @@ import { CollectionsModule } from './modules/collections/collections.module.js';
 import { LikesModule } from './modules/likes/likes.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { WatchesModule } from './modules/watches/watches.module.js';
+import { HealthModule } from './modules/health/health.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { RpcModule } from './rpc/rpc.module.js';
 
@@ -35,6 +36,7 @@ import { RpcModule } from './rpc/rpc.module.js';
     LikesModule,
     NotificationsModule,
     WatchesModule,
+    HealthModule,
   ],
   providers: [
     // Apply rate limiting globally to all HTTP routes

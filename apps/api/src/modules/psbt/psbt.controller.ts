@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PsbtService, BuildListingPsbtDto, SubmitSignedPsbtDto } from './psbt.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { SyncGuard } from '../../guards/sync.guard.js';
 import { IsString, IsNotEmpty } from 'class-validator';
 
 class DecodePsbtDto {
@@ -15,7 +16,7 @@ export class PsbtController {
   constructor(private readonly psbt: PsbtService) {}
 
   @Post('build/listing')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Build unsigned listing PSBT for seller to sign' })
   buildListing(@Body() dto: BuildListingPsbtDto) {
@@ -29,7 +30,7 @@ export class PsbtController {
   }
 
   @Post('submit')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Submit buyer-signed PSBT for broadcast' })
   submit(@CurrentUser() user: { address: string }, @Body() dto: SubmitSignedPsbtDto) {

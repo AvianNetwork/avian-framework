@@ -8,6 +8,7 @@ import {
   CompleteOfferDto,
 } from './offers.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { SyncGuard } from '../../guards/sync.guard.js';
 
 @ApiTags('offers')
 @Controller('offers')
@@ -35,7 +36,7 @@ export class OffersController {
   }
 
   @Post()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Make an offer on a listing' })
   create(@CurrentUser() user: { address: string }, @Body() dto: CreateOfferDto) {
@@ -95,7 +96,7 @@ export class OffersController {
   }
 
   @Post(':id/complete')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Finalize and broadcast the buyer-signed PSBT (buyer only)' })
   complete(

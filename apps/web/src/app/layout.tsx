@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { WalletProvider } from '../context/WalletContext';
 import { NavBar } from '../components/NavBar';
+import { SyncBanner } from '../components/ui/SyncBanner';
 import { Toaster } from '../components/ui/Toaster';
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-gray-950 text-gray-100 min-h-screen font-sans antialiased">
         <WalletProvider>
           <NavBar />
+          <SyncBanner />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </main>

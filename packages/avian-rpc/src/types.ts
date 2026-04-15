@@ -20,6 +20,7 @@ export interface BlockchainInfo {
   difficulty: number;
   mediantime: number;
   verificationprogress: number;
+  initialblockdownload: boolean;
   chainwork: string;
   pruned: boolean;
 }

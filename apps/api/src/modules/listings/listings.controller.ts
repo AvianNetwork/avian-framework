@@ -12,6 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ListingsService, CreateListingDto } from './listings.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { SyncGuard } from '../../guards/sync.guard.js';
 
 @ApiTags('listings')
 @Controller('listings')
@@ -47,7 +48,7 @@ export class ListingsController {
   }
 
   @Post()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new listing (requires signed PSBT)' })
   create(@CurrentUser() user: { address: string; userId: string }, @Body() dto: CreateListingDto) {

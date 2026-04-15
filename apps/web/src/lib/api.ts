@@ -273,6 +273,10 @@ export const api = {
     apiFetch<void>(`/watches/${encodeURIComponent(address)}`, { method: 'DELETE', token }),
   getWatchStatus: (address: string, token: string) =>
     apiFetch<{ watching: boolean }>(`/watches/status/${encodeURIComponent(address)}`, { token }),
+
+  // Health
+  getHealth: () =>
+    apiFetch<{ status: string; syncing: boolean; blocks: number; headers: number; progress: number; chain: string }>('/health'),
 };
 
 
