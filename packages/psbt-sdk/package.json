@@ -1,0 +1,29 @@
+{
+  "name": "@avian-framework/psbt-sdk",
+  "version": "0.1.0",
+  "description": "PSBT workflow builder and validator for Avian asset marketplace flows",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@avian-framework/avian-rpc": "*",
+    "@avian-framework/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "*",    "typescript": "^6.0.0",
+    "rimraf": "*"
+  }
+}

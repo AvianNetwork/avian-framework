@@ -1,0 +1,384 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String       @id @default(cuid())
+  address        String       @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  avatarUrl      String?
+  bannerUrl      String?
+  bio            String?
+  discordHandle  String?
+  displayName    String?
+  twitterHandle  String?
+  username       String?      @unique
+  website        String?
+  bannerPosition String?      @default("50% 50%")
+  blindOffers    BlindOffer[]
+  collections    Collection[]
+  listings       Listing[]
+  offers         Offer[]
+  wallets        UserWallet[]
+  watching       UserWatch[]  @relation("watching")
+  watchers       UserWatch[]  @relation("watchers")
+
+  @@map("users")
+}
+
+/// Additional wallet addresses linked to a user account.
+model UserWallet {
+  id        String   @id @default(cuid())
+  userId    String
+  address   String   @unique
+  label     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("user_wallets")
+}
+
+model Listing {
+  id              String        @id @default(cuid())
+  sellerAddress   String
+  assetName       String
+  assetAmount     Decimal       @db.Decimal(20, 8)
+  priceAvn        Decimal       @db.Decimal(20, 8)
+  /// Pre-signed PSBT — seller signed with SIGHASH_SINGLE|ANYONECANPAY
+  psbtBase64      String
+  status          ListingStatus @default(ACTIVE)
+  expiresAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  /// Seller's asset UTXO — stored so the block poller can detect on-chain settlement
+  sellerInputTxid String?
+  sellerInputVout Int?
+  asset           Asset         @relation(fields: [assetName], references: [name])
+  seller          User          @relation(fields: [sellerAddress], references: [address])
+  offers          Offer[]
+  psbtRecords     PsbtRecord[]
+  txEvents        TxEvent[]
+
+  @@index([sellerAddress])
+  @@index([assetName])
+  @@index([status])
+  @@index([sellerInputTxid])
+  @@map("listings")
+}
+
+model Offer {
+  id              String       @id @default(cuid())
+  listingId       String
+  buyerAddress    String
+  offeredPriceAvn Decimal      @db.Decimal(20, 8)
+  /// Buyer-signed PSBT (payment input signed, awaiting finalization)
+  psbtBase64      String?
+  status          OfferStatus  @default(PENDING)
+  expiresAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  buyer           User         @relation(fields: [buyerAddress], references: [address])
+  listing         Listing      @relation(fields: [listingId], references: [id])
+  psbtRecords     PsbtRecord[]
+  txEvents        TxEvent[]
+
+  @@index([listingId])
+  @@index([buyerAddress])
+  @@index([status])
+  @@map("offers")
+}
+
+model PsbtRecord {
+  id            String         @id @default(cuid())
+  workflowType  WorkflowType
+  status        WorkflowStatus @default(DRAFT)
+  psbtBase64    String
+  /// Set after broadcast
+  txid          String?        @unique
+  sellerAddress String
+  buyerAddress  String?
+  assetName     String
+  assetAmount   Decimal        @db.Decimal(20, 8)
+  priceAvn      Decimal        @db.Decimal(20, 8)
+  feesAvn       Decimal?       @db.Decimal(20, 8)
+  expiresAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  listingId     String?
+  offerId       String?
+  listing       Listing?       @relation(fields: [listingId], references: [id])
+  offer         Offer?         @relation(fields: [offerId], references: [id])
+
+  @@index([status])
+  @@index([txid])
+  @@index([sellerAddress])
+  @@map("psbt_records")
+}
+
+model TxEvent {
+  id               String      @id @default(cuid())
+  txid             String
+  type             TxEventType
+  blockHeight      Int?
+  blockHash        String?
+  confirmations    Int         @default(0)
+  relatedListingId String?
+  relatedOfferId   String?
+  createdAt        DateTime    @default(now())
+  listing          Listing?    @relation(fields: [relatedListingId], references: [id])
+  offer            Offer?      @relation(fields: [relatedOfferId], references: [id])
+
+  @@index([txid])
+  @@index([relatedListingId])
+  @@index([relatedOfferId])
+  @@map("tx_events")
+}
+
+model Asset {
+  name            String                @id
+  amount          Decimal               @db.Decimal(20, 8)
+  units           Int
+  reissuable      Boolean
+  hasIpfs         Boolean
+  ipfsHash        String?
+  lastSeenBlock   Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  holderMetadata  AssetHolderMetadata[]
+  holderNotes     AssetHolderNote[]
+  holders         AssetHolder[]
+  metadata        AssetMetadata?
+  collectionItems CollectionItem[]
+  listings        Listing[]
+
+  @@map("assets")
+}
+
+/// Per-address balance for an asset — one row per (asset, holder) pair.
+model AssetHolder {
+  assetName     String
+  address       String
+  balance       Decimal  @db.Decimal(20, 8)
+  lastSeenBlock Int      @default(0)
+  updatedAt     DateTime @updatedAt
+  asset         Asset    @relation(fields: [assetName], references: [name])
+
+  @@id([assetName, address])
+  @@index([address])
+  @@map("asset_holders")
+}
+
+/// Canonical marketplace metadata for an asset — editable only by the holder
+/// of the admin token (ASSETNAME! suffix).
+model AssetMetadata {
+  assetName      String   @id
+  title          String?
+  description    String?
+  externalUrl    String?
+  traits         Json?
+  creatorAddress String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  asset          Asset    @relation(fields: [assetName], references: [name])
+
+  @@map("asset_metadata")
+}
+
+/// Private per-holder annotation (notes only visible to the authenticated holder).
+model AssetHolderNote {
+  assetName String
+  address   String
+  note      String?
+  updatedAt DateTime @updatedAt
+  asset     Asset    @relation(fields: [assetName], references: [name])
+
+  @@id([assetName, address])
+  @@map("asset_holder_notes")
+}
+
+/// Per-holder public metadata shown on listings and collection entries.
+/// Editable by any current holder of the asset (not the admin token).
+model AssetHolderMetadata {
+  assetName   String
+  address     String
+  title       String?
+  description String?
+  externalUrl String?
+  traits      Json?
+  updatedAt   DateTime @updatedAt
+  asset       Asset    @relation(fields: [assetName], references: [name])
+
+  @@id([assetName, address])
+  @@map("asset_holder_metadata")
+}
+
+model Collection {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  name           String
+  description    String?
+  bannerUrl      String?
+  avatarUrl      String?
+  website        String?
+  twitterHandle  String?
+  discordHandle  String?
+  royaltyPercent Decimal?         @db.Decimal(5, 2)
+  isVerified     Boolean          @default(false)
+  ownerAddress   String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  items          CollectionItem[]
+  owner          User             @relation(fields: [ownerAddress], references: [address])
+
+  @@index([ownerAddress])
+  @@map("collections")
+}
+
+model CollectionItem {
+  collectionId String
+  assetName    String
+  displayOrder Int        @default(0)
+  addedAt      DateTime   @default(now())
+  asset        Asset      @relation(fields: [assetName], references: [name])
+  collection   Collection @relation(fields: [collectionId], references: [id])
+
+  @@id([collectionId, assetName])
+  @@index([assetName])
+  @@map("collection_items")
+}
+
+model Like {
+  id         String   @id @default(cuid())
+  address    String
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([address, targetType, targetId])
+  @@index([targetType, targetId])
+  @@map("likes")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  address   String
+  type      String
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([address, read])
+  @@index([address, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model UserWatch {
+  id             String   @id @default(cuid())
+  watcherAddress String
+  watchedAddress String
+  createdAt      DateTime @default(now())
+  watcher        User     @relation("watching", fields: [watcherAddress], references: [address])
+  watched        User     @relation("watchers", fields: [watchedAddress], references: [address])
+
+  @@unique([watcherAddress, watchedAddress])
+  @@index([watcherAddress])
+  @@index([watchedAddress])
+  @@map("user_watches")
+}
+
+model AuthChallenge {
+  id        String    @id @default(cuid())
+  address   String
+  challenge String    @unique
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([address])
+  @@index([challenge])
+  @@map("auth_challenges")
+}
+
+model BlindOffer {
+  id              String           @id @default(cuid())
+  buyerAddress    String
+  assetName       String
+  assetAmount     Decimal          @db.Decimal(20, 8)
+  offeredPriceAvn Decimal          @db.Decimal(20, 8)
+  status          BlindOfferStatus @default(PENDING)
+  ttlSeconds      Int?
+  expiresAt       DateTime?
+  /// Set when seller accepts — links to the auto-created listing + initial offer
+  listingId       String?
+  offerId         String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  buyer           User             @relation(fields: [buyerAddress], references: [address])
+
+  @@index([assetName])
+  @@index([buyerAddress])
+  @@index([status])
+  @@map("blind_offers")
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+  EXPIRED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+  COMPLETED
+}
+
+enum WorkflowType {
+  LISTING
+  OFFER
+  ESCROW
+  AUCTION
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PENDING_SIGNATURE
+  PENDING_BROADCAST
+  PENDING_CONFIRMATION
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  FAILED
+}
+
+enum TxEventType {
+  BROADCAST
+  CONFIRMED
+  FAILED
+  REPLACED
+}
+
+enum BlindOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+  COMPLETED
+}

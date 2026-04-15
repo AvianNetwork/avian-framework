@@ -1,0 +1,27 @@
+{
+  "name": "@avian-framework/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Avian chain watcher and block indexer service",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx --watch src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@avian-framework/avian-rpc": "*",
+    "@avian-framework/database": "*",
+    "@avian-framework/shared": "*",
+    "dotenv": "^17.4.0",
+    "ioredis": "^5.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "rimraf": "*",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.0"
+  }
+}

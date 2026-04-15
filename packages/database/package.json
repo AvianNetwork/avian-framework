@@ -1,0 +1,36 @@
+{
+  "name": "@avian-framework/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prisma schema and generated client for Avian PSBT marketplace",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && node -e \"const fs=require('fs');try{fs.cpSync('src/generated','dist/generated',{recursive:true,force:true,errorOnExist:false,filter:(s)=>!s.endsWith('.node')});}catch(e){if(e.code!=='EPERM')throw e;}\"",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev --name init",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@nestjs/platform-socket.io": "^11.1.18",
+    "@nestjs/websockets": "^11.1.18",
+    "@prisma/client": "^6.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "*",    "prisma": "^6.5.0",
+    "rimraf": "*",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.0"
+  }
+}
