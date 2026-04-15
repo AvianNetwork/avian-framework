@@ -130,6 +130,9 @@ services:
       context: avian-node
       dockerfile: Dockerfile
     restart: unless-stopped
+    # aviand needs time to flush indexes (txindex, assetindex, addressindex, etc.)
+    # on shutdown. Default 10s is far too short and risks index corruption.
+    stop_grace_period: 120s
     volumes:
       - avian_data:/avian/.avian
     healthcheck:

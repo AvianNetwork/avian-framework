@@ -41,6 +41,10 @@ VOLUME ["/avian/.avian"]
 # P2P port, RPC port
 EXPOSE 8814 7896
 
+# aviand handles SIGTERM gracefully — flushes indexes and shuts down cleanly.
+# The companion stop_grace_period in docker-compose.yml gives it enough time.
+STOPSIGNAL SIGTERM
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
