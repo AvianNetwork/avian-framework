@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { AvianRpcClient } from '@avian-framework/avian-rpc';
-import { AVIAN_RPC } from '../../rpc/rpc.module.js';
+import { AVIAN_RPC } from '../rpc/rpc.module.js';
 
 /**
  * Guard that rejects requests while the Avian node is performing its
