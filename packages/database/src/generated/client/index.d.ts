@@ -126,7 +126,8 @@ export const OfferStatus: {
   REJECTED: 'REJECTED',
   WITHDRAWN: 'WITHDRAWN',
   EXPIRED: 'EXPIRED',
-  COMPLETED: 'COMPLETED'
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
 };
 
 export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus]
@@ -5545,7 +5546,7 @@ export namespace Prisma {
       assetAmount: Prisma.Decimal
       priceAvn: Prisma.Decimal
       /**
-       * Pre-signed PSBT — seller signed with SIGHASH_SINGLE|ANYONECANPAY
+       * Pre-signed PSBT — seller signed with SIGHASH_SINGLE|FORKID|ANYONECANPAY
        */
       psbtBase64: string
       status: $Enums.ListingStatus

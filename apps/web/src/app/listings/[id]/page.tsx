@@ -41,6 +41,6 @@ export interface OfferData {
   id: string;
   buyerAddress: string;
   offeredPriceAvn: number;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN' | 'EXPIRED' | 'COMPLETED';
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN' | 'EXPIRED' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
 }

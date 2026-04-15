@@ -51,22 +51,21 @@ export class PsbtService {
     let txid = dto.assetUtxoTxid;
     let vout = dto.assetUtxoVout;
 
-    // Auto-detect asset UTXO if not provided
+    // Auto-detect asset UTXO if not provided — uses address index (no wallet required)
     if (!txid || vout === undefined) {
-      const utxos = await this.rpc.listUnspent(1, 9999999, [dto.sellerAddress], true, { assetName: dto.assetName });
+      const utxos = await this.rpc.getAddressUtxos([dto.sellerAddress], dto.assetName);
       const match = utxos.find((u) => {
-        const name = u.asset ?? u.assetName;
-        const amount = u.assetamount ?? u.assetAmount ?? 0;
-        return name === dto.assetName && amount >= dto.assetAmount;
+        const amount = u.satoshis / 1e8;
+        return amount >= dto.assetAmount;
       });
       if (!match) {
         throw new BadRequestException(
           `No confirmed UTXO found for asset "${dto.assetName}" at address ${dto.sellerAddress}. ` +
-          `Ensure your wallet is imported on this node, or provide assetUtxoTxid and assetUtxoVout manually.`
+          `Ensure the address index is enabled (-addressindex=1) and the asset UTXO has at least 1 confirmation.`
         );
       }
       txid = match.txid;
-      vout = match.vout;
+      vout = match.outputIndex;
     }
 
     const result = await this.builder.buildListingPsbt({

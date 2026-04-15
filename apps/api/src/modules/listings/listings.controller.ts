@@ -50,8 +50,8 @@ export class ListingsController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new listing (requires signed PSBT)' })
-  create(@CurrentUser() user: { address: string }, @Body() dto: CreateListingDto) {
-    return this.listings.create(user.address, dto);
+  create(@CurrentUser() user: { address: string; userId: string }, @Body() dto: CreateListingDto) {
+    return this.listings.create(user.address, user.userId, dto);
   }
 
   @Patch(':id/cancel')

@@ -22,7 +22,7 @@ export class CreateListingDto {
   @ApiProperty({ description: 'Asking price in AVN', example: 500 })
   @IsNumber() @IsPositive() priceAvn!: number;
 
-  @ApiProperty({ description: 'Base64-encoded PSBT pre-signed by the seller with SIGHASH_SINGLE|ANYONECANPAY. Build this with POST /psbt/build-listing, sign with walletprocesspsbt in Avian Core, then submit here.', example: 'cHNidP8B...' })
+  @ApiProperty({ description: 'Base64-encoded PSBT pre-signed by the seller with SIGHASH_SINGLE|FORKID|ANYONECANPAY. Build this with POST /psbt/build-listing, sign with walletprocesspsbt in Avian Core, then submit here.', example: 'cHNidP8B...' })
   @IsString() psbtBase64!: string;
 
   @ApiProperty({ required: false, description: 'Listing TTL in seconds (minimum 60). Defaults to 7 days.', example: 604800 })
@@ -37,8 +37,8 @@ export class ListingsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async create(sellerAddress: string, dto: CreateListingDto) {
-    // A listing PSBT is intentionally incomplete (signed SINGLE|ANYONECANPAY — buyer inputs
+  async create(sellerAddress: string, userId: string, dto: CreateListingDto) {
+    // A listing PSBT is intentionally incomplete (signed SINGLE|FORKID|ANYONECANPAY — buyer inputs
     // not yet added), so analyzePsbt will report negative fee. Only check that it decodes.
     const result = await this.validator.validate(dto.psbtBase64);
     const structuralErrors = result.errors.filter(
@@ -61,7 +61,7 @@ export class ListingsService {
     if (!isSigned) {
       throw new BadRequestException(
         'The PSBT has not been signed. ' +
-        'Run `walletprocesspsbt "<PSBT>" true "SINGLE|ANYONECANPAY"` in your Avian Core console ' +
+        'Run `walletprocesspsbt "<PSBT>" true "SINGLE|FORKID|ANYONECANPAY"` in your Avian Core console ' +
         'and paste the `psbt` value from the result — not the original unsigned PSBT.'
       );
     }
@@ -70,6 +70,46 @@ export class ListingsService {
     // detect on-chain settlement even if the buyer broadcasts the tx themselves.
     const sellerInputTxid = result.decoded?.tx?.vin?.[0]?.txid ?? null;
     const sellerInputVout = result.decoded?.tx?.vin?.[0]?.vout ?? null;
+
+    // Validate that the PSBT output[0] matches the claimed price and pays to an
+    // address owned by this user.  The seller may hold the asset on a linked wallet
+    // (secondary address) rather than the address they authenticated with, so we
+    // check all addresses belonging to the user.
+    const psbtOutput0 = result.decoded?.tx?.vout?.[0];
+    if (psbtOutput0) {
+      const psbtAddress = psbtOutput0.scriptPubKey?.address
+        ?? psbtOutput0.scriptPubKey?.addresses?.[0];
+
+      if (psbtAddress) {
+        // Collect every address the user owns: primary + linked wallets
+        const [user, linkedWallets] = await Promise.all([
+          this.db.user.findUnique({ where: { id: userId }, select: { address: true } }),
+          this.db.userWallet.findMany({ where: { userId }, select: { address: true } }),
+        ]);
+        const ownedAddresses = new Set<string>();
+        if (user?.address) ownedAddresses.add(user.address);
+        for (const w of linkedWallets) ownedAddresses.add(w.address);
+
+        if (!ownedAddresses.has(psbtAddress)) {
+          throw new BadRequestException(
+            `PSBT output[0] pays to ${psbtAddress} which is not one of your linked wallet addresses. ` +
+            'The PSBT payment address must belong to your account, ' +
+            'or the buyer\'s transaction will fail at broadcast.'
+          );
+        }
+
+        // NOTE: we intentionally keep sellerAddress as the user's primary
+        // (auth) address for the FK constraint and ownership checks.
+        // getFundingInfo() extracts the real PSBT payment address at runtime.
+      }
+
+      if (psbtOutput0.value !== dto.priceAvn) {
+        throw new BadRequestException(
+          `PSBT output[0] value is ${psbtOutput0.value} AVN but the listing price is ${dto.priceAvn} AVN. ` +
+          'The PSBT payment amount must match the listed price.'
+        );
+      }
+    }
 
     const expiresAt = dto.ttlSeconds
       ? new Date(Date.now() + dto.ttlSeconds * 1000)

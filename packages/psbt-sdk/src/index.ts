@@ -160,7 +160,7 @@ export interface ListingPsbtParams {
 }
 
 export interface OfferPsbtParams {
-  /** The pre-signed listing PSBT (seller signed with SINGLE|ANYONECANPAY) */
+  /** The pre-signed listing PSBT (seller signed with SINGLE|FORKID|ANYONECANPAY) */
   listingPsbtBase64: string;
   /** Buyer's UTXO(s) to pay with */
   buyerUtxos: Array<{ txid: string; vout: number; amount: number }>;
@@ -193,9 +193,9 @@ export interface ValidationResult {
 /**
  * PsbtBuilder orchestrates PSBT construction for marketplace workflows.
  *
- * Listing flow (SIGHASH_SINGLE|ANYONECANPAY):
+ * Listing flow (SIGHASH_SINGLE|FORKID|ANYONECANPAY):
  *   1. buildListingPsbt()  — create unsigned PSBT with asset input + payment output
- *   2. Seller signs via walletProcessPsbt with sighash SINGLE|ANYONECANPAY
+ *   2. Seller signs via walletProcessPsbt with sighash SINGLE|FORKID|ANYONECANPAY
  *   3. Signed PSBT stored as the listing
  *
  * Offer flow:
@@ -209,20 +209,24 @@ export class PsbtBuilder {
 
   /**
    * Build the initial unsigned listing PSBT.
-   * Seller must then sign with walletProcessPsbt using sighash SINGLE|ANYONECANPAY.
+   * Seller must then sign with walletProcessPsbt using sighash SINGLE|FORKID|ANYONECANPAY.
    *
-   * SINGLE|ANYONECANPAY means:
+   * SINGLE|FORKID|ANYONECANPAY means:
    *   - SINGLE:       seller's signature covers only output[0] (their payment), paired with input[0]
    *   - ANYONECANPAY: only input[0] (seller's asset UTXO) is committed to
+   *   - FORKID:       BIP143-style sighash (mandatory on Avian)
    * This allows the buyer to add payment inputs and their asset-receiving/change outputs
    * without invalidating the seller's signature.
-   * Avian Core applies SIGHASH_FORKID (0x40) automatically.
+   *
+   * IMPORTANT: You MUST pass "SINGLE|FORKID|ANYONECANPAY" explicitly to walletprocesspsbt.
+   * Omitting FORKID may compute a legacy sighash preimage while still stamping the
+   * FORKID byte, producing a signature that fails verification at broadcast.
    *
    * Structure:
    *   Inputs:  [seller's asset UTXO]
    *   Outputs: [seller receives priceAvn AVN]
    *
-   * After seller signs with SINGLE|ANYONECANPAY, buyer can add:
+   * After seller signs with SINGLE|FORKID|ANYONECANPAY, buyer can add:
    *   Inputs:  [...buyer payment UTXOs]
    *   Outputs: [...buyer receives asset, buyer change]
    */
@@ -231,7 +235,7 @@ export class PsbtBuilder {
 
     // Use sequence 0xFFFFFFFE (RBF disabled, locktime compliant) — same as Avian Core's
     // wallet default for normal transactions. The seller will sign with
-    // SIGHASH_SINGLE|ANYONECANPAY|FORKID which commits to this exact sequence value.
+    // SIGHASH_SINGLE|FORKID|ANYONECANPAY which commits to this exact sequence value.
     // The buyer MUST use the same sequence when building their funded PSBT.
     const psbtBase64 = await this.rpc.createPsbt(
       [{ txid: assetUtxoTxid, vout: assetUtxoVout, sequence: 0xFFFFFFFE }],

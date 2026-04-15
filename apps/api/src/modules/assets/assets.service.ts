@@ -47,6 +47,34 @@ export class AssetsService {
     return Object.fromEntries(holders.map((h) => [h.assetName, Number(h.balance)]));
   }
 
+  /**
+   * Re-sync asset_holders for a single asset from the RPC node.
+   * Called after a sale broadcast so the Owner badge updates immediately
+   * instead of waiting for the next periodic indexer cycle.
+   */
+  async syncAssetHolders(assetName: string) {
+    const allHolders = await this.rpc.listAddressesByAsset(assetName);
+    const now = new Date();
+    const info = await this.rpc.getBlockchainInfo();
+    const currentBlock = info.blocks;
+
+    for (const [address, balance] of Object.entries(allHolders)) {
+      await this.db.assetHolder.upsert({
+        where: { assetName_address: { assetName, address } },
+        create: { assetName, address, balance, lastSeenBlock: currentBlock, updatedAt: now },
+        update: { balance, lastSeenBlock: currentBlock, updatedAt: now },
+      });
+    }
+
+    // Prune addresses that no longer hold the asset
+    await this.db.assetHolder.deleteMany({
+      where: {
+        assetName,
+        address: { notIn: Object.keys(allHolders) },
+      },
+    });
+  }
+
   async getHoldersByAsset(assetName: string) {
     try {
       return await this.rpc.listAddressesByAsset(assetName);

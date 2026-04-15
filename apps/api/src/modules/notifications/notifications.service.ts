@@ -7,6 +7,7 @@ export type NotificationType =
   | 'offer_received'
   | 'offer_accepted'
   | 'offer_rejected'
+  | 'offer_cancelled'
   | 'offer_expired'
   | 'offer_expiring_soon'
   | 'blind_offer_accepted'

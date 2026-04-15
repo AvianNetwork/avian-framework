@@ -68,6 +68,7 @@ export interface RpcScriptPubKey {
   hex: string;
   reqSigs?: number;
   type: string;
+  address?: string;
   addresses?: string[];
 }
 
@@ -113,11 +114,17 @@ export interface RpcBlock {
 
 /**
  * Sighash types supported by Avian for walletprocesspsbt.
- * SIGHASH_SINGLE|ANYONECANPAY is the correct type for open marketplace listings:
+ *
+ * IMPORTANT: Avian Core requires SIGHASH_FORKID (0x40) on all signatures.
+ * Always use the explicit |FORKID variants to ensure the correct BIP143-style
+ * sighash preimage is computed.  Omitting FORKID may cause the node to use a
+ * legacy preimage while still stamping the FORKID byte, producing an invalid
+ * signature that fails at broadcast time.
+ *
+ * For marketplace listings: SINGLE|FORKID|ANYONECANPAY
  * - SINGLE:       seller commits to output[0] (their payment) paired with input[0] (their asset UTXO)
  * - ANYONECANPAY: only seller's input is committed — buyer can add payment inputs freely
- * - FORKID (0x40) is applied automatically by Avian Core
- * This allows the buyer to append inputs and their own outputs without invalidating the seller's signature.
+ * - FORKID:       BIP143-style sighash (mandatory on Avian)
  */
 export type SigHashType =
   | 'ALL'
@@ -125,7 +132,13 @@ export type SigHashType =
   | 'SINGLE'
   | 'ALL|ANYONECANPAY'
   | 'NONE|ANYONECANPAY'
-  | 'SINGLE|ANYONECANPAY';
+  | 'SINGLE|ANYONECANPAY'
+  | 'ALL|FORKID'
+  | 'NONE|FORKID'
+  | 'SINGLE|FORKID'
+  | 'ALL|FORKID|ANYONECANPAY'
+  | 'NONE|FORKID|ANYONECANPAY'
+  | 'SINGLE|FORKID|ANYONECANPAY';
 
 export interface CreatePsbtOptions {
   locktime?: number;

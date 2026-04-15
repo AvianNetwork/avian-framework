@@ -98,6 +98,8 @@ export const api = {
     apiFetch<unknown>(`/offers/${id}/reject`, { method: 'PATCH', token }),
   withdrawOffer: (id: string, token: string) =>
     apiFetch<unknown>(`/offers/${id}/withdraw`, { method: 'PATCH', token }),
+  cancelOffer: (id: string, token: string) =>
+    apiFetch<unknown>(`/offers/${id}/cancel`, { method: 'PATCH', token }),
   combineOfferPsbt: (id: string, buyerFundingPsbt: string, token: string) =>
     apiFetch<{ combinedPsbt: string }>(`/offers/${id}/combine-psbt`, {
       method: 'POST',

@@ -66,6 +66,14 @@ export class OffersController {
     return this.offers.withdraw(id, user.address);
   }
 
+  @Patch(':id/cancel')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel an accepted offer (buyer or seller)' })
+  cancel(@Param('id') id: string, @CurrentUser() user: { address: string }) {
+    return this.offers.cancel(id, user.address);
+  }
+
   @Get(':id/funding-info')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()

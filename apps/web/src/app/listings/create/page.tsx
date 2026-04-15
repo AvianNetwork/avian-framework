@@ -35,7 +35,7 @@ export default function CreateListingPage() {
 }
 
 function CreateListingForm() {
-  const { address, token, isConnected, knownAddresses } = useWallet();
+  const { address, token, isConnected, linkedAddresses } = useWallet();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>('form');
   const [form, setForm] = useState<FormData>(() => ({
@@ -76,7 +76,7 @@ function CreateListingForm() {
   }
 
   function copyCommand() {
-    navigator.clipboard.writeText(`walletprocesspsbt "${psbtBase64}" true "SINGLE|ANYONECANPAY"`);
+    navigator.clipboard.writeText(`walletprocesspsbt "${psbtBase64}" true "SINGLE|FORKID|ANYONECANPAY"`);
     setCopiedCmd(true);
     setTimeout(() => setCopiedCmd(false), 2000);
   }
@@ -95,8 +95,8 @@ function CreateListingForm() {
   async function fetchOwnedBalance(assetName: string) {
     if (!address || !assetName.trim()) return;
     const name = assetName.trim();
-    // Check all known addresses so linked wallets are included
-    const allAddresses = knownAddresses.length > 0 ? knownAddresses : [address];
+    // Check all linked addresses so linked wallets are included
+    const allAddresses = linkedAddresses.length > 0 ? linkedAddresses : [address];
     try {
       const results = await Promise.all(
         allAddresses.map((addr) => api.getBalances(addr).catch(() => ({} as Record<string, number>)))
@@ -125,7 +125,7 @@ function CreateListingForm() {
     if (!form.assetName.trim()) return;
     setUtxos(null);
     setSelectedUtxo(null);
-    const allAddresses = knownAddresses.length > 0 ? knownAddresses : [address!];
+    const allAddresses = linkedAddresses.length > 0 ? linkedAddresses : [address!];
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
     try {
       const pages = await Promise.all(
@@ -468,7 +468,7 @@ function CreateListingForm() {
             <label className="label">Avian Core Console Command</label>
             <div className="flex gap-2 items-start">
               <code className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-avian-400 break-all font-mono block max-h-40 overflow-y-auto">
-                walletprocesspsbt &quot;{psbtBase64}&quot; true &quot;SINGLE|ANYONECANPAY&quot;
+                walletprocesspsbt &quot;{psbtBase64}&quot; true &quot;SINGLE|FORKID|ANYONECANPAY&quot;
               </code>
               <button onClick={copyCommand} className="btn-primary shrink-0 self-start">
                 {copiedCmd ? <><Check className="w-3.5 h-3.5 inline mr-1" />Copied</> : 'Copy Command'}
@@ -491,9 +491,8 @@ function CreateListingForm() {
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-gray-500 space-y-1">
             <p>
-              <code className="text-gray-300">SINGLE|ANYONECANPAY</code> — commits only to your payment output
+              <code className="text-gray-300">SINGLE|FORKID|ANYONECANPAY</code> — commits only to your payment output
               and your asset input. The buyer can attach their payment inputs without invalidating your signature.
-              Avian Core applies FORKID automatically.
             </p>
           </div>
           <button onClick={() => setStep('submit')} className="btn-primary w-full">

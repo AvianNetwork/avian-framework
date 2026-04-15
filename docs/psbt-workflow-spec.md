@@ -40,7 +40,12 @@ the same workflows can be used in:
 | `ALL` | Signs all inputs and outputs | Standard payment |
 | `ALL\|ANYONECANPAY` | Signs this input + all outputs; others can add inputs | General multi-party use |
 | `SINGLE` | Signs this input + its paired output | Advanced cases |
-| `SINGLE\|ANYONECANPAY` | Signs this input + its **paired** output; others can add inputs/outputs | **Marketplace listings** — seller pre-signs asset input + payment output only |
+| `SINGLE\|FORKID\|ANYONECANPAY` | Signs this input + its **paired** output (BIP143); others can add inputs/outputs | **Marketplace listings** — seller pre-signs asset input + payment output only |
+
+> **FORKID is mandatory on Avian.** Always use the `|FORKID` variants explicitly
+> (e.g. `SINGLE|FORKID|ANYONECANPAY`, `ALL|FORKID`). Omitting FORKID may cause
+> the node to compute a legacy sighash preimage while still stamping the FORKID
+> byte on the signature, producing a signature that fails verification at broadcast.
 
 ---
 
@@ -71,11 +76,12 @@ without the seller needing to be online at purchase time.
      Outputs: [seller receives priceAvn AVN]
 
 2. Seller: imports PSBT into their Avian wallet, reviews, signs with:
-   sighashType = "SINGLE|ANYONECANPAY"
+   sighashType = "SINGLE|FORKID|ANYONECANPAY"
    → Seller's input[0] + output[0] (payment) are locked;
      buyer can add their own inputs and outputs around them.
+   FORKID is mandatory on Avian — always specify it explicitly.
 
-   avian-cli walletprocesspsbt "<psbt>" true "SINGLE|ANYONECANPAY" false
+   avian-cli walletprocesspsbt "<psbt>" true "SINGLE|FORKID|ANYONECANPAY" false
    Use the psbt field from the result (not the original).
 
 3. Seller → App:  POST /listings
@@ -101,8 +107,8 @@ without the seller needing to be online at purchase time.
 
 ```
 Inputs:
-  [0] seller's asset UTXO  — signed by seller (SINGLE|ANYONECANPAY)
-  [1] buyer's AVN UTXO(s)  — signed by buyer (ALL)
+  [0] seller's asset UTXO  — signed by seller (SINGLE|FORKID|ANYONECANPAY)
+  [1] buyer's AVN UTXO(s)  — signed by buyer (ALL|FORKID)
 
 Outputs:
   [0] seller receives priceAvn AVN      (from seller's listing — MUST stay at index 0)
@@ -110,7 +116,7 @@ Outputs:
   [2] buyer receives AVN change         (added by buyer)
 ```
 
-> **Important:** The seller's `SINGLE|ANYONECANPAY` signature commits to input[0] and
+> **Important:** The seller's `SINGLE|FORKID|ANYONECANPAY` signature commits to input[0] and
 > output[0] specifically. Both MUST remain at index 0 in the combined transaction or
 > the seller's signature will be invalid.
 
@@ -124,7 +130,7 @@ acceptance the buyer constructs the full transaction using the seller's pre-sign
 PSBT and their own funding UTXOs, then broadcasts.
 
 > **Prerequisite:** Workflow 2 requires a Workflow 1 listing to exist. The seller's
-> SINGLE|ANYONECANPAY-signed PSBT (stored in the listing record) is injected into the
+> SINGLE|FORKID|ANYONECANPAY-signed PSBT (stored in the listing record) is injected into the
 > buyer's funding PSBT at `combine-psbt` time. For the case where no listing exists yet,
 > see Workflow 3 (Blind Offer) — the PSBT settlement path is identical once the seller accepts.
 
@@ -152,7 +158,7 @@ PSBT and their own funding UTXOs, then broadcasts.
                   sellerAddress, priceAvn, assetName, assetAmount }
 
 4. Buyer: constructs a funding PSBT on their own Avian node, seeding the
-   seller's UTXO at input[0] so the seller's SINGLE|ANYONECANPAY sig stays valid:
+   seller's UTXO at input[0] so the seller's SINGLE|FORKID|ANYONECANPAY sig stays valid:
 
    avian-cli walletcreatefundedpsbt \
      '[{"txid":"<sellerInputTxid>","vout":<sellerInputVout>,"sequence":<sellerInputSequence>}]' \
@@ -170,7 +176,7 @@ PSBT and their own funding UTXOs, then broadcasts.
 
 6. Buyer: signs the combined PSBT (signs only their own inputs with ALL)
 
-   avian-cli walletprocesspsbt "<combinedPsbt>" true "ALL" false
+   avian-cli walletprocesspsbt "<combinedPsbt>" true "ALL|FORKID" false
 
 7. Buyer → App:  POST /offers/:id/complete
    Body: { signedPsbt }  (buyer-signed combined PSBT from step 6)
@@ -230,8 +236,8 @@ buyer can complete the purchase immediately using the same steps as Workflow 2.
         '[{"txid":"<txid>","vout":<vout>}]' \
         '[{"<sellerAddress>":<offeredPriceAvn>},{"<sellerAddress>":{"transfer":{"<ASSET>":<amount>}}}]'
 
-      # Sign with SINGLE|ANYONECANPAY
-      walletprocesspsbt "<psbt>" true "SINGLE|ANYONECANPAY"
+      # Sign with SINGLE|FORKID|ANYONECANPAY
+      walletprocesspsbt "<psbt>" true "SINGLE|FORKID|ANYONECANPAY"
       # Use the "psbt" field from the result.
 
    b. Seller → App:  POST /blind-offers/:id/accept
@@ -251,7 +257,7 @@ buyer can complete the purchase immediately using the same steps as Workflow 2.
                   sellerAddress, priceAvn, assetName, assetAmount }
 
 6–8. Buyer completes the purchase using Workflow 2 steps 4–8 (combine-psbt → sign → complete).
-     The PSBT flow is identical: the seller's SINGLE|ANYONECANPAY sig is injected into
+     The PSBT flow is identical: the seller's SINGLE|FORKID|ANYONECANPAY sig is injected into
      the buyer's funding PSBT via POST /offers/:id/combine-psbt, the buyer signs, and the
      app finalizes and broadcasts.
 ```
@@ -310,7 +316,7 @@ concern scoped to the listings/offers services and the expiry-watcher.
 - Always call `testmempoolaccept` before `sendrawtransaction`
 - Listings should have a TTL/expiry to prevent stale PSBTs accumulating
 - Offers support an optional `ttlSeconds` field; expired offers should be treated as WITHDRAWN
-- `SIGHASH_SINGLE|ANYONECANPAY` commits to input[index] and output[index] — the seller's input and payment output **must** remain at index 0 in the buyer's funded PSBT
+- `SIGHASH_SINGLE|FORKID|ANYONECANPAY` commits to input[index] and output[index] (BIP143) — the seller's input and payment output **must** remain at index 0 in the buyer's funded PSBT
 - The binary PSBT injection used in `combine-psbt` is intentional: `combinepsbt` requires identical unsigned transactions, which is impossible when the buyer adds their own inputs/outputs
 - **Direct wallet broadcast:** If a buyer obtains the combined PSBT and broadcasts it directly from their own wallet (bypassing `POST /offers/:id/complete`), the indexer will still detect the settlement on-chain — the seller's asset UTXO being spent triggers `detectOnChainSettlements()` in the block poller, which marks the listing `SOLD` and any accepted offer `COMPLETED`. However, if the broadcast happens with *no offer record in the app* (e.g. the buyer constructed and broadcast entirely outside the marketplace), the listing will be marked `SOLD` but no offer or buyer notification will exist. This is a known limitation of the coordinator model: the app can observe settlement but cannot reconstruct intent it was never told about.
 
@@ -325,8 +331,8 @@ avian-cli createpsbt '[{"txid":"<utxo>","vout":0}]' '[{"<sellerAddr>":50}]'
 # Add UTXO data for external signing
 avian-cli utxoupdatepsbt "<psbt_base64>"
 
-# Seller signs (SINGLE|ANYONECANPAY) — commits to input[0] + output[0] only
-avian-cli walletprocesspsbt "<psbt_base64>" true "SINGLE|ANYONECANPAY" false
+# Seller signs (SINGLE|FORKID|ANYONECANPAY) — commits to input[0] + output[0] only
+avian-cli walletprocesspsbt "<psbt_base64>" true "SINGLE|FORKID|ANYONECANPAY" false
 
 # Buyer: build funding PSBT, seeding seller's UTXO at input[0]
 avian-cli walletcreatefundedpsbt \
@@ -337,8 +343,8 @@ avian-cli walletcreatefundedpsbt \
 # NOTE: Do NOT use combinepsbt — PSBTs have different structures.
 # Instead, POST /offers/:id/combine-psbt to inject the seller's sig via the API.
 
-# Buyer signs combined PSBT (ALL — covers buyer's inputs only)
-avian-cli walletprocesspsbt "<combined_psbt>" true "ALL" false
+# Buyer signs combined PSBT (ALL|FORKID — covers buyer's inputs only)
+avian-cli walletprocesspsbt "<combined_psbt>" true "ALL|FORKID" false
 
 # Finalize + extract
 avian-cli finalizepsbt "<signed_psbt>" true

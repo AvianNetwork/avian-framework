@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import Link from 'next/link';
 
-type OfferStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN' | 'COMPLETED';
+type OfferStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN' | 'COMPLETED' | 'CANCELLED';
 
 interface MyOffer {
   id: string;
@@ -29,6 +29,7 @@ const STATUS_LABEL: Record<OfferStatus, { label: string; className: string }> = 
   REJECTED: { label: 'Rejected', className: 'bg-red-900/40 text-red-400' },
   WITHDRAWN: { label: 'Withdrawn', className: 'bg-gray-700/40 text-gray-400' },
   COMPLETED: { label: 'Completed', className: 'bg-blue-900/40 text-blue-300' },
+  CANCELLED: { label: 'Cancelled', className: 'bg-gray-700/40 text-gray-400' },
 };
 
 export default function MyOffersPage() {
@@ -36,6 +37,7 @@ export default function MyOffersPage() {
   const [offers, setOffers] = useState<MyOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -48,6 +50,21 @@ export default function MyOffersPage() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [token]);
+
+  async function handleCancel(offerId: string) {
+    if (!token) return;
+    setCancellingId(offerId);
+    try {
+      await api.cancelOffer(offerId, token);
+      setOffers((prev) =>
+        prev.map((o) => (o.id === offerId ? { ...o, status: 'CANCELLED' as const } : o))
+      );
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to cancel offer.');
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   if (!address) {
     return (
@@ -98,12 +115,21 @@ export default function MyOffersPage() {
                     <p className="text-sm text-green-400 mb-3">
                       The seller accepted your offer. Complete the purchase now.
                     </p>
-                    <Link
-                      href={`/listings/${offer.listing.id}`}
-                      className="inline-block bg-avian-500 hover:bg-avian-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-                    >
-                      Complete Purchase →
-                    </Link>
+                    <div className="flex gap-3">
+                      <Link
+                        href={`/listings/${offer.listing.id}`}
+                        className="inline-block bg-avian-500 hover:bg-avian-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                      >
+                        Complete Purchase →
+                      </Link>
+                      <button
+                        onClick={() => handleCancel(offer.id)}
+                        disabled={cancellingId === offer.id}
+                        className="text-sm px-4 py-2 rounded-lg border border-gray-600 text-red-400 hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      >
+                        {cancellingId === offer.id ? 'Cancelling…' : 'Cancel Offer'}
+                      </button>
+                    </div>
                   </div>
                 )}
 

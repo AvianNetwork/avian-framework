@@ -212,11 +212,11 @@ See [docs/psbt-workflow-spec.md](docs/psbt-workflow-spec.md) for the full spec.
 **Listing flow (sell asset for AVN):**
 
 1. Seller calls `POST /psbt/build/listing` → receives unsigned PSBT
-2. Seller signs with `walletprocesspsbt "<PSBT>" true "SINGLE|ANYONECANPAY"` in Avian Core
+2. Seller signs with `walletprocesspsbt "<PSBT>" true "SINGLE|FORKID|ANYONECANPAY"` in Avian Core
 3. Seller submits signed PSBT to `POST /listings` → stored as active listing
 4. Buyer calls `GET /offers/:id/funding-info` → gets seller UTXO details
 5. Buyer builds funding PSBT with `walletcreatefundedpsbt` and submits to `POST /offers/:id/combine-psbt`
-6. Buyer signs combined PSBT with `walletprocesspsbt "..." true "ALL"` and submits to `POST /offers/:id/complete`
+6. Buyer signs combined PSBT with `walletprocesspsbt "..." true "ALL|FORKID"` and submits to `POST /offers/:id/complete`
 7. API finalizes, validates with `testmempoolaccept`, and broadcasts
 8. Indexer confirms on-chain → listing marked SOLD, notifications sent
 

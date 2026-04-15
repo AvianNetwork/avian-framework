@@ -13,6 +13,7 @@ import { PRISMA } from '../../database/database.module.js';
 import { AVIAN_RPC } from '../../rpc/rpc.module.js';
 import { ListingsService } from '../listings/listings.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { AssetsService } from '../assets/assets.service.js';
 
 export class CreateOfferDto {
   @ApiProperty({ description: 'ID of the listing to make an offer on', example: 'clxyz123...' })
@@ -29,8 +30,8 @@ export class CreateOfferDto {
 }
 
 export class CombineOfferPsbtDto {
-  @ApiProperty({ description: 'Buyer funding PSBT from `walletcreatefundedpsbt \'[]\' \'[{"SELLER_ADDRESS": PRICE}]\'` in Avian Core', example: 'cHNidP8B...' })
-  /** PSBT from `walletcreatefundedpsbt '[]' '[{"SELLER": PRICE}]'` on buyer's node */
+  @ApiProperty({ description: 'Buyer funding PSBT from walletcreatefundedpsbt with the seller UTXO at input[0] (weight:600) and payment + asset transfer outputs', example: 'cHNidP8B...' })
+  /** PSBT from `walletcreatefundedpsbt '[{"txid":"...","vout":N,"weight":600}]' '[{"SELLER":PRICE},{"BUYER":{"transfer":{"ASSET":QTY}}}]' 0 '{"add_inputs":true,"fee_rate":2,"changePosition":2}'` on buyer's node */
   @IsString() buyerFundingPsbt!: string;
 }
 
@@ -47,6 +48,7 @@ export class OffersService {
     @Inject(AVIAN_RPC) private readonly rpc: AvianRpcClient,
     private readonly listings: ListingsService,
     private readonly notificationsService: NotificationsService,
+    private readonly assetsService: AssetsService,
   ) {}
 
   async create(buyerAddress: string, dto: CreateOfferDto) {
@@ -187,12 +189,56 @@ export class OffersService {
   }
 
   /**
+   * Cancel an accepted offer. Either the buyer or the seller can cancel.
+   * Reverts the listing status back to ACTIVE so new offers can be received.
+   */
+  async cancel(id: string, callerAddress: string) {
+    const offer = await this.findOne(id);
+    const listing = await this.listings.findOne(offer.listingId);
+
+    const isBuyer = offer.buyerAddress === callerAddress;
+    const isSeller = listing.sellerAddress === callerAddress;
+    if (!isBuyer && !isSeller) {
+      throw new BadRequestException('Only the buyer or seller can cancel an accepted offer.');
+    }
+    if (offer.status !== 'ACCEPTED') {
+      throw new BadRequestException('Only accepted offers can be cancelled.');
+    }
+
+    const [updatedOffer] = await this.db.$transaction([
+      this.db.offer.update({ where: { id }, data: { status: 'CANCELLED' } }),
+      this.db.listing.update({
+        where: { id: listing.id },
+        data: { status: 'ACTIVE' },
+      }),
+    ]);
+
+    // Notify the other party
+    const otherAddress = isBuyer ? listing.sellerAddress : offer.buyerAddress;
+    const who = isBuyer ? 'The buyer' : 'The seller';
+    this.notificationsService.create({
+      address: otherAddress,
+      type: 'offer_cancelled',
+      title: 'Offer cancelled',
+      body: `${who} cancelled the accepted offer on ${listing.assetName}. The listing is active again.`,
+      link: isBuyer ? `/listings/${listing.id}` : '/offers',
+    }).catch(() => { /* non-critical */ });
+
+    return updatedOffer;
+  }
+
+  /**
    * Decode the listing PSBT and return the seller's input UTXO details so
    * the buyer can build a correctly-structured funding PSBT with:
-   *   walletcreatefundedpsbt '[{"txid":"...","vout":N}]' '[{"SELLER_ADDR":PRICE}]' 0 '{"add_inputs":true,"fee_rate":2}'
+   *   walletcreatefundedpsbt '[{"txid":"...","vout":N,"sequence":S,"weight":600}]'
+   *     '[{"SELLER_ADDR":PRICE},{"BUYER_ADDR":{"transfer":{"ASSET":QTY}}}]'
+   *     0 '{"add_inputs":true,"fee_rate":2,"changePosition":2}'
+   *
+   * The "weight":600 (generous P2PKH estimate) lets the wallet estimate fees
+   * without needing to "solve" the seller's input (which isn't in the buyer's wallet).
    *
    * The seller's input MUST be at index 0 in the buyer's funded PSBT so that
-   * the seller's SINGLE|ANYONECANPAY signature (which commits to input[0] and output[0])
+   * the seller's SINGLE|FORKID|ANYONECANPAY signature (which commits to input[0] and output[0])
    * remains valid after the buyer's payment inputs are added.
    */
   async getFundingInfo(id: string) {
@@ -209,12 +255,28 @@ export class OffersService {
       throw new BadRequestException('Listing PSBT has no inputs.');
     }
 
+    // CRITICAL: extract the actual output[0] address/value from the PSBT,
+    // NOT from the listing DB record.  The seller's SINGLE|FORKID|ANYONECANPAY
+    // signature commits to output[0]'s exact scriptPubKey.  If the buyer builds
+    // their funded PSBT with a different address at output[0], the seller's
+    // signature becomes invalid ("Signature must be zero for failed CHECK(MULTI)SIG").
+    const sellerOutput = decoded.tx.vout[0];
+    if (!sellerOutput) {
+      throw new BadRequestException('Listing PSBT has no outputs.');
+    }
+    const psbtSellerAddress =
+      sellerOutput.scriptPubKey.address ??
+      sellerOutput.scriptPubKey.addresses?.[0];
+    if (!psbtSellerAddress) {
+      throw new BadRequestException('Cannot extract seller payment address from listing PSBT.');
+    }
+
     return {
       sellerInputTxid: sellerInput.txid,
       sellerInputVout: sellerInput.vout,
       sellerInputSequence: sellerInput.sequence ?? 4294967293,
-      sellerAddress: listing.sellerAddress,
-      priceAvn: Number(listing.priceAvn),
+      sellerAddress: psbtSellerAddress,
+      priceAvn: sellerOutput.value,
       assetName: listing.assetName,
       assetAmount: Number(listing.assetAmount),
     };
@@ -230,7 +292,7 @@ export class OffersService {
    *   funded PSBT has N inputs / M outputs — they can never be combined.
    *
    * HOW THIS WORKS:
-   *   The seller signed with SINGLE|ANYONECANPAY which commits only to
+   *   The seller signed with SINGLE|FORKID|ANYONECANPAY which commits only to
    *   input[0] and output[0].  As long as the buyer's funded PSBT keeps
    *   the seller's UTXO at input[0] and the payment at output[0], the
    *   seller's signature is cryptographically valid in the new (larger)
@@ -262,7 +324,7 @@ export class OffersService {
       throw new BadRequestException(
         'The listing PSBT has no seller signature. ' +
         'The seller needs to cancel this listing and create a new one, ' +
-        'making sure to run `walletprocesspsbt "<PSBT>" true "SINGLE|ANYONECANPAY"` ' +
+        'making sure to run `walletprocesspsbt "<PSBT>" true "SINGLE|FORKID|ANYONECANPAY"` ' +
         'and paste the `psbt` value from the result (not the original unsigned PSBT).'
       );
     }
@@ -318,6 +380,10 @@ export class OffersService {
         },
       }),
     ]);
+
+    // Re-sync asset holders from RPC so the Owner badge updates immediately
+    // instead of waiting for the next periodic indexer cycle (fire-and-forget).
+    void this.assetsService.syncAssetHolders(listing.assetName).catch(() => {});
 
     return { txid };
   }

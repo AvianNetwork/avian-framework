@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/client"
+  provider      = "prisma-client-js"
+  output        = "../src/generated/client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -53,7 +54,7 @@ model Listing {
   assetName       String
   assetAmount     Decimal       @db.Decimal(20, 8)
   priceAvn        Decimal       @db.Decimal(20, 8)
-  /// Pre-signed PSBT — seller signed with SIGHASH_SINGLE|ANYONECANPAY
+  /// Pre-signed PSBT — seller signed with SIGHASH_SINGLE|FORKID|ANYONECANPAY
   psbtBase64      String
   status          ListingStatus @default(ACTIVE)
   expiresAt       DateTime?

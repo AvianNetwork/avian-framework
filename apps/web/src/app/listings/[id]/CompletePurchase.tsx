@@ -49,14 +49,17 @@ export function CompletePurchase({ offerId, token }: CompletePurchaseProps) {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  // The seller's input MUST be at index 0 (SIGHASH_SINGLE|ANYONECANPAY|FORKID commits to input[0] ↔ output[0]).
+  // The seller's input MUST be at index 0 (SIGHASH_SINGLE|FORKID|ANYONECANPAY commits to input[0] ↔ output[0]).
   // Output[0]: seller's AVN payment  ← seller's sig commits to this; must stay at index 0
   // Output[1]: asset transfer to buyer ← without this the asset is burned when the UTXO is spent
   // Output[2]: buyer's AVN change     ← changePosition:2 places it here
   // sequence must match exactly what the seller signed — extracted from the listing PSBT.
+  // weight:600 tells the wallet the expected weight (in WU) of the seller's input so it can
+  // estimate fees without needing to "solve" that input (which would fail because it's not
+  // in the buyer's wallet). 600 = generous P2PKH estimate (148 bytes × 4 + buffer).
   const fundCmd =
     fundingInfo && buyerAddress
-      ? `walletcreatefundedpsbt '[{"txid":"${fundingInfo.sellerInputTxid}","vout":${fundingInfo.sellerInputVout},"sequence":${fundingInfo.sellerInputSequence}}]' '[{"${fundingInfo.sellerAddress}":${fundingInfo.priceAvn}},{"${buyerAddress}":{"transfer":{"${fundingInfo.assetName}":${fundingInfo.assetAmount}}}}]' 0 '{"add_inputs":true,"fee_rate":2,"changePosition":2}'`
+      ? `walletcreatefundedpsbt '[{"txid":"${fundingInfo.sellerInputTxid}","vout":${fundingInfo.sellerInputVout},"sequence":${fundingInfo.sellerInputSequence},"weight":600}]' '[{"${fundingInfo.sellerAddress}":${fundingInfo.priceAvn}},{"${buyerAddress}":{"transfer":{"${fundingInfo.assetName}":${fundingInfo.assetAmount}}}}]' 0 '{"add_inputs":true,"fee_rate":2,"changePosition":2}'`
       : '';
 
   async function handleCombine() {
@@ -89,7 +92,7 @@ export function CompletePurchase({ offerId, token }: CompletePurchaseProps) {
     }
   }
 
-  const signCmd = `walletprocesspsbt "${combinedPsbt}" true "ALL"`;
+  const signCmd = `walletprocesspsbt "${combinedPsbt}" true "ALL|FORKID"`;
 
   if (infoLoading) {
     return (

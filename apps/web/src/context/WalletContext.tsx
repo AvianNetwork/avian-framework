@@ -25,6 +25,8 @@ interface WalletContextValue {
   token: string | null;
   isConnected: boolean;
   knownAddresses: string[];
+  /** Current user's addresses only: primary + linked wallets from their profile */
+  linkedAddresses: string[];
   /** Addresses with a valid non-expired session — the only ones that can be switched to */
   switchableAddresses: string[];
   connect: (address: string, challenge: string, signature: string) => Promise<void>;
@@ -40,6 +42,7 @@ const WalletContext = createContext<WalletContextValue>({
   token: null,
   isConnected: false,
   knownAddresses: [],
+  linkedAddresses: [],
   switchableAddresses: [],
   connect: async () => {},
   switchTo: () => false,
@@ -77,6 +80,7 @@ function saveSessions(sessions: Record<string, WalletState>) {
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [knownAddresses, setKnownAddresses] = useState<string[]>([]);
+  const [linkedAddresses, setLinkedAddresses] = useState<string[]>([]);
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [connectModalPrefill, setConnectModalPrefill] = useState<string | undefined>();
 
@@ -129,13 +133,22 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  // Sync linked wallets from profile into knownAddresses whenever the active session changes
+  // Sync linked wallets from profile whenever the active session changes.
+  // Updates both knownAddresses (persistent, for quick reconnect) and
+  // linkedAddresses (current user only, for ownership checks).
   useEffect(() => {
-    if (!wallet) return;
+    if (!wallet) {
+      setLinkedAddresses([]);
+      return;
+    }
+    // Start with just the active address until the profile loads
+    setLinkedAddresses([wallet.address]);
     api.getMyProfile(wallet.token)
       .then((profile) => {
         const p = profile as { wallets?: { address: string }[] };
         const linked = p.wallets?.map((w) => w.address) ?? [];
+        // linkedAddresses = primary + linked (current user only)
+        setLinkedAddresses([wallet.address, ...linked.filter((a) => a !== wallet.address)]);
         if (linked.length === 0) return;
         setKnownAddresses((prev) => {
           const merged = [...new Set([...prev, ...linked])];
@@ -188,6 +201,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         token: wallet?.token ?? null,
         isConnected: !!wallet,
         knownAddresses,
+        linkedAddresses,
         switchableAddresses: Object.entries(loadSessions())
           .filter(([addr, s]) => addr !== wallet?.address && new Date(s.expiresAt) > new Date())
           .map(([addr]) => addr),

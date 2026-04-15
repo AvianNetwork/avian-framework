@@ -142,13 +142,16 @@ export class AvianRpcClient {
   /**
    * Sign a PSBT with the wallet's keys.
    *
-   * For marketplace listings: seller uses sighashType='SINGLE|ANYONECANPAY'
-   * so their asset input and payment output are signed, but the buyer can still add payment inputs and their own outputs.
+   * For marketplace listings: seller uses sighashType='SINGLE|FORKID|ANYONECANPAY'
+   * so their asset input and payment output are signed, but the buyer can still add
+   * payment inputs and their own outputs.
+   *
+   * IMPORTANT: Always use the |FORKID variants explicitly on Avian.
    */
   async walletProcessPsbt(
     psbtBase64: string,
     sign = true,
-    sighashType: SigHashType = 'ALL',
+    sighashType: SigHashType = 'ALL|FORKID',
     finalize = false
   ): Promise<ProcessPsbtResult> {
     return this.callRpc<ProcessPsbtResult>('walletprocesspsbt', [

@@ -29,8 +29,8 @@ export class CreateBlindOfferDto {
 }
 
 export class AcceptBlindOfferDto {
-  @ApiProperty({ description: 'Seller\'s PSBT signed with SIGHASH_SINGLE|ANYONECANPAY, accepting the blind offer. Build with POST /psbt/build-listing then sign in Avian Core.', example: 'cHNidP8B...' })
-  /** Seller's pre-signed PSBT (signed with SIGHASH_SINGLE|ANYONECANPAY) */
+  @ApiProperty({ description: 'Seller\'s PSBT signed with SIGHASH_SINGLE|FORKID|ANYONECANPAY, accepting the blind offer. Build with POST /psbt/build-listing then sign in Avian Core.', example: 'cHNidP8B...' })
+  /** Seller's pre-signed PSBT (signed with SIGHASH_SINGLE|FORKID|ANYONECANPAY) */
   @IsString() psbtBase64!: string;
 }
 
@@ -262,7 +262,7 @@ export class BlindOffersService {
     if (!isSigned) {
       throw new BadRequestException(
         'The PSBT has not been signed. ' +
-        'Run `walletprocesspsbt "<PSBT>" true "SINGLE|ANYONECANPAY"` in your Avian Core console ' +
+        'Run `walletprocesspsbt "<PSBT>" true "SINGLE|FORKID|ANYONECANPAY"` in your Avian Core console ' +
         'and paste the `psbt` value from the result.'
       );
     }

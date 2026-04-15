@@ -364,7 +364,8 @@ exports.OfferStatus = exports.$Enums.OfferStatus = {
   REJECTED: 'REJECTED',
   WITHDRAWN: 'WITHDRAWN',
   EXPIRED: 'EXPIRED',
-  COMPLETED: 'COMPLETED'
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
 };
 
 exports.WorkflowType = exports.$Enums.WorkflowType = {

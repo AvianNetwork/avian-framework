@@ -41,3 +41,10 @@ packages/database/prisma/migrations/*.sql
 
 # Test coverage
 coverage/
+
+# Uploads (local dev only)
+apps/api/uploads/
+
+# Prisma engine binaries (platform-specific, not portable)
+packages/database/src/generated/client/*.node
+packages/database/src/generated/client/*.node.*

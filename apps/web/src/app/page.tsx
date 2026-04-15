@@ -96,7 +96,7 @@ const WORKFLOWS = [
     icon: <ClipboardList className="w-10 h-10" />,
     title: 'List & Sell',
     description:
-      'Create a listing at your asking price. Sign a PSBT with SINGLE|ANYONECANPAY so buyers can atomically purchase without you being online.',
+      'Create a listing at your asking price. Sign a PSBT with SINGLE|FORKID|ANYONECANPAY so buyers can atomically purchase without you being online.',
     href: '/marketplace',
     cta: 'Browse listings →',
   },
@@ -122,7 +122,7 @@ const STEPS = [
   {
     icon: <PenLine className="w-8 h-8" />,
     title: 'Seller signs PSBT',
-    description: 'Signs with SINGLE|ANYONECANPAY — commits to their asset input and payment output only.',
+    description: 'Signs with SINGLE|FORKID|ANYONECANPAY — commits to their asset input and payment output only.',
   },
   {
     icon: <Link2 className="w-8 h-8" />,

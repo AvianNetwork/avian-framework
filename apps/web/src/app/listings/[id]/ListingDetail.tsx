@@ -36,6 +36,7 @@ export function ListingDetail({
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCancelOfferModal, setShowCancelOfferModal] = useState(false);
   const [ipfsHash, setIpfsHash] = useState<string | null>(null);
   const [holderMeta, setHolderMeta] = useState<{
     title?: string | null;
@@ -121,6 +122,22 @@ export function ListingDetail({
     }
   }
 
+  async function handleCancelOffer() {
+    const acceptedOffer = offers.find((o) => o.status === 'ACCEPTED');
+    if (!acceptedOffer) return;
+    setLoading(true);
+    setShowCancelOfferModal(false);
+    try {
+      await api.cancelOffer(acceptedOffer.id, token!);
+      setSuccess('Offer cancelled. The listing is active again.');
+      router.refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel offer.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const statusBadge: Record<string, string> = {
     ACTIVE: 'badge-active',
     SOLD: 'badge-sold',
@@ -132,6 +149,9 @@ export function ListingDetail({
     WITHDRAWN: 'badge-cancelled',
     COMPLETED: 'badge-sold',
   };
+
+  // Offers the seller sees in their management section
+  const acceptedOffer = offers.find((o) => o.status === 'ACCEPTED');
 
   const pendingOffers = offers.filter((o) => o.status === 'PENDING');
 
@@ -255,8 +275,17 @@ export function ListingDetail({
 
         {/* Seller: show waiting state when offer accepted */}
         {mounted && isSeller && listing.status === 'SOLD' && offers.some((o) => o.status === 'ACCEPTED') && (
-          <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-4 py-3 text-sm text-yellow-300 flex items-center gap-2">
-            <Clock className="w-4 h-4 shrink-0" /> Offer accepted — waiting for the buyer to complete the purchase.
+          <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-4 py-3 text-sm text-yellow-300 space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 shrink-0" /> Offer accepted — waiting for the buyer to complete the purchase.
+            </div>
+            <button
+              onClick={() => setShowCancelOfferModal(true)}
+              disabled={loading}
+              className="text-sm px-4 py-2 rounded-lg border border-yellow-700/60 text-red-400 hover:bg-gray-800/60 transition-colors disabled:opacity-50"
+            >
+              Cancel Accepted Offer
+            </button>
           </div>
         )}
 
@@ -324,6 +353,17 @@ export function ListingDetail({
                         Reject
                       </button>
                     </>
+                  ) : offer.status === 'ACCEPTED' ? (
+                    <>
+                      <span className={statusBadge[offer.status] ?? 'badge'}>{offer.status}</span>
+                      <button
+                        onClick={() => setShowCancelOfferModal(true)}
+                        disabled={loading}
+                        className="text-xs px-3 py-1 rounded-lg border border-gray-600 text-red-400 hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </>
                   ) : (
                     <span className={statusBadge[offer.status] ?? 'badge'}>{offer.status}</span>
                   )}
@@ -342,10 +382,19 @@ export function ListingDetail({
 
       {/* Buyer: complete an accepted offer */}
       {mounted && myAcceptedOffer && token && (
-        <CompletePurchase
-          offerId={myAcceptedOffer.id}
-          token={token}
-        />
+        <div className="space-y-3">
+          <CompletePurchase
+            offerId={myAcceptedOffer.id}
+            token={token}
+          />
+          <button
+            onClick={() => setShowCancelOfferModal(true)}
+            disabled={loading}
+            className="text-sm px-4 py-2 rounded-lg border border-gray-600 text-red-400 hover:bg-gray-800 transition-colors disabled:opacity-50"
+          >
+            Cancel Offer
+          </button>
+        </div>
       )}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -364,6 +413,28 @@ export function ListingDetail({
                 className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-colors"
               >
                 Cancel Listing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showCancelOfferModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <h2 className="text-lg font-semibold text-white">Cancel accepted offer?</h2>
+            <p className="text-sm text-gray-400">This will cancel the accepted offer and return the listing for <span className="font-medium text-white">{listing.assetName}</span> to active status.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowCancelOfferModal(false)}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+              >
+                Keep Offer
+              </button>
+              <button
+                onClick={handleCancelOffer}
+                className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-colors"
+              >
+                Cancel Offer
               </button>
             </div>
           </div>

@@ -102,7 +102,7 @@ export interface Listing {
   assetName: string;
   assetAmount: number;
   priceAvn: number;
-  /** Pre-signed PSBT from seller (SIGHASH_SINGLE|ANYONECANPAY on asset input) */
+  /** Pre-signed PSBT from seller (SIGHASH_SINGLE|FORKID|ANYONECANPAY on asset input) */
   psbtBase64: string;
   status: ListingStatus;
   expiresAt?: Date;

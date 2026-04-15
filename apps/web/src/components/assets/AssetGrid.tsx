@@ -23,7 +23,7 @@ interface Props {
 }
 
 export function AssetGrid({ assets }: Props) {
-  const { address, isConnected, knownAddresses } = useWallet();
+  const { address, isConnected, linkedAddresses } = useWallet();
   const [holdings, setHoldings] = useState<Set<string>>(new Set());
   const [metadataAsset, setMetadataAsset] = useState<string | null>(null);
   const [holderMeta, setHolderMeta] = useState<Record<string, { title?: string | null; description?: string | null }>>({});
@@ -33,8 +33,9 @@ export function AssetGrid({ assets }: Props) {
       setHoldings(new Set());
       return;
     }
-    // Deduplicate: knownAddresses always includes the active address
-    const addresses = [...new Set(knownAddresses.length > 0 ? knownAddresses : [address])];
+    // Only check balances for the current user's addresses (primary + linked wallets),
+    // NOT the full knownAddresses which may contain addresses from other users.
+    const addresses = linkedAddresses.length > 0 ? linkedAddresses : [address];
     let cancelled = false;
     Promise.all(addresses.map((addr) => api.getBalances(addr).catch(() => ({} as Record<string, number>))))
       .then((results) => {
@@ -46,7 +47,7 @@ export function AssetGrid({ assets }: Props) {
         setHoldings(merged);
       });
     return () => { cancelled = true; };
-  }, [address, knownAddresses]);
+  }, [address, linkedAddresses]);
 
   // Fetch holder metadata for owned assets
   useEffect(() => {
