@@ -41,26 +41,12 @@ export class ListingsController {
     );
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get listing by ID' })
-  findOne(@Param('id') id: string) {
-    return this.listings.findOne(id);
-  }
-
   @Post()
   @UseGuards(AuthGuard('jwt'), SyncGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new listing (requires signed PSBT)' })
   create(@CurrentUser() user: { address: string; userId: string }, @Body() dto: CreateListingDto) {
     return this.listings.create(user.address, user.userId, dto);
-  }
-
-  @Patch(':id/cancel')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cancel your listing' })
-  cancel(@Param('id') id: string, @CurrentUser() user: { address: string }) {
-    return this.listings.cancel(id, user.address);
   }
 
   @Get('sales/by-address')
@@ -96,5 +82,21 @@ export class ListingsController {
   @ApiOperation({ summary: 'Get marketplace stats; pass ?asset= for per-asset stats' })
   getStats(@Query('asset') asset?: string) {
     return this.listings.getStats(asset);
+  }
+
+  // :id must come AFTER all static routes so NestJS doesn't match
+  // "activity", "stats", etc. as an ID parameter.
+  @Get(':id')
+  @ApiOperation({ summary: 'Get listing by ID' })
+  findOne(@Param('id') id: string) {
+    return this.listings.findOne(id);
+  }
+
+  @Patch(':id/cancel')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel your listing' })
+  cancel(@Param('id') id: string, @CurrentUser() user: { address: string }) {
+    return this.listings.cancel(id, user.address);
   }
 }
