@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardList, Handshake, Target, PenLine, Link2, Shuffle, Link } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Gift, Handshake, Target, PenLine, Link2, Shuffle, Link } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -10,7 +10,7 @@ export default function HomePage() {
           <br />on the Avian blockchain
         </h1>
         <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-          Buy and sell AVN assets using PSBT — your keys never leave your wallet.
+          Buy, sell, and gift AVN assets using PSBT — your keys never leave your wallet.
           The app coordinates, you sign.
         </p>
         <div className="flex items-center justify-center gap-4">
@@ -25,8 +25,8 @@ export default function HomePage() {
 
       {/* Workflows */}
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold text-center">Three ways to trade</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="text-2xl font-semibold text-center">Four ways to transact</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {WORKFLOWS.map((w) => (
             <div key={w.title} className="card space-y-3 flex flex-col">
               <div className="text-avian-400">{w.icon}</div>
@@ -115,6 +115,14 @@ const WORKFLOWS = [
       'Want an asset that isn\'t listed? Submit a blind offer with your price. The asset holder is notified and can accept by providing a signed PSBT.',
     href: '/assets',
     cta: 'Explore assets →',
+  },
+  {
+    icon: <Gift className="w-10 h-10" />,
+    title: 'Gift an Asset',
+    description:
+      'Send any asset to another address for free. You pay only the network fee — no marketplace involvement, fully on-chain and non-custodial.',
+    href: '/gift',
+    cta: 'Send a gift →',
   },
 ];
 

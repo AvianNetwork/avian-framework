@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UseGuards, Get, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { PsbtService, BuildListingPsbtDto, SubmitSignedPsbtDto } from './psbt.service.js';
+import { PsbtService, BuildListingPsbtDto, SubmitSignedPsbtDto, BuildGiftPsbtDto, SubmitGiftDto } from './psbt.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { SyncGuard } from '../../guards/sync.guard.js';
 import { IsString, IsNotEmpty } from 'class-validator';
@@ -35,5 +35,21 @@ export class PsbtController {
   @ApiOperation({ summary: 'Submit buyer-signed PSBT for broadcast' })
   submit(@CurrentUser() user: { address: string }, @Body() dto: SubmitSignedPsbtDto) {
     return this.psbt.submitSignedPsbt(user.address, dto);
+  }
+
+  @Post('build/gift')
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Build unsigned gift PSBT for sender to sign' })
+  buildGift(@Body() dto: BuildGiftPsbtDto) {
+    return this.psbt.buildGiftPsbt(dto);
+  }
+
+  @Post('submit/gift')
+  @UseGuards(AuthGuard('jwt'), SyncGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Submit signed gift PSBT for broadcast' })
+  submitGift(@CurrentUser() user: { address: string }, @Body() dto: SubmitGiftDto) {
+    return this.psbt.submitGift(user.address, dto);
   }
 }

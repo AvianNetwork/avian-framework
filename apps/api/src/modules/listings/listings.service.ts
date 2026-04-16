@@ -263,6 +263,26 @@ export class ListingsService {
     return { data: tagged, total, page, pageSize };
   }
 
+  async getGiftsByAddress(address: string, page = 1, pageSize = 20) {
+    const where = {
+      OR: [{ senderAddress: address }, { recipientAddress: address }],
+    };
+    const [data, total] = await Promise.all([
+      this.db.gift.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.db.gift.count({ where }),
+    ]);
+    const tagged = data.map((g) => ({
+      ...g,
+      role: g.senderAddress === address ? 'sent' : 'received',
+    }));
+    return { data: tagged, total, page, pageSize };
+  }
+
   /** Global marketplace stats or per-asset stats */
   async getStats(assetName?: string) {
     const soldWhere = { status: 'SOLD' as const, ...(assetName ? { assetName } : {}) };
@@ -296,15 +316,15 @@ export class ListingsService {
     };
   }
 
-  /** Trade history for a specific asset — all completed sales */
+  /** Trade history for a specific asset — all completed sales + gifts */
   async getAssetHistory(assetName: string, page = 1, pageSize = 20) {
-    const where = { status: 'SOLD' as const, assetName };
-    const [data, total] = await Promise.all([
+    const saleWhere = { status: 'SOLD' as const, assetName };
+    const giftWhere = { assetName };
+
+    const [salesData, salesTotal, giftsData, giftsTotal] = await Promise.all([
       this.db.listing.findMany({
-        where,
+        where: saleWhere,
         orderBy: { updatedAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
         include: {
           asset: { select: { ipfsHash: true, hasIpfs: true } },
           offers: {
@@ -319,11 +339,17 @@ export class ListingsService {
           },
         },
       }),
-      this.db.listing.count({ where }),
+      this.db.listing.count({ where: saleWhere }),
+      this.db.gift.findMany({
+        where: giftWhere,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.db.gift.count({ where: giftWhere }),
     ]);
 
-    const sales = data.map((l) => ({
+    const sales = salesData.map((l) => ({
       id: l.id,
+      type: 'sale' as const,
       assetName: l.assetName,
       assetAmount: l.assetAmount,
       priceAvn: l.offers[0]?.offeredPriceAvn ?? l.priceAvn,
@@ -331,21 +357,40 @@ export class ListingsService {
       buyerAddress: l.offers[0]?.buyerAddress ?? null,
       txid: l.txEvents[0]?.txid ?? null,
       blockHeight: l.txEvents[0]?.blockHeight ?? null,
-      soldAt: l.updatedAt,
+      date: l.updatedAt,
     }));
 
-    return { data: sales, total, page, pageSize };
+    const gifts = giftsData.map((g) => ({
+      id: g.id,
+      type: 'gift' as const,
+      assetName: g.assetName,
+      assetAmount: g.assetAmount,
+      priceAvn: null,
+      sellerAddress: g.senderAddress,
+      buyerAddress: g.recipientAddress,
+      txid: g.txid,
+      blockHeight: null,
+      date: g.createdAt,
+    }));
+
+    // Merge, sort by date descending, then paginate
+    const merged = [...sales, ...gifts].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const total = salesTotal + giftsTotal;
+    const paged = merged.slice((page - 1) * pageSize, page * pageSize);
+
+    return { data: paged, total, page, pageSize };
   }
 
-  /** Global activity feed — recent completed sales across all assets */
+  /** Global activity feed — recent completed sales + gifts across all assets */
   async getActivityFeed(page = 1, pageSize = 30) {
-    const where = { status: 'SOLD' as const };
-    const [data, total] = await Promise.all([
+    const saleWhere = { status: 'SOLD' as const };
+
+    const [salesData, salesTotal, giftsData, giftsTotal] = await Promise.all([
       this.db.listing.findMany({
-        where,
+        where: saleWhere,
         orderBy: { updatedAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
         include: {
           asset: { select: { ipfsHash: true, hasIpfs: true } },
           offers: {
@@ -360,11 +405,14 @@ export class ListingsService {
           },
         },
       }),
-      this.db.listing.count({ where }),
+      this.db.listing.count({ where: saleWhere }),
+      this.db.gift.findMany({ orderBy: { createdAt: 'desc' } }),
+      this.db.gift.count(),
     ]);
 
-    const feed = data.map((l) => ({
+    const sales = salesData.map((l) => ({
       id: l.id,
+      type: 'sale' as const,
       assetName: l.assetName,
       assetAmount: l.assetAmount,
       priceAvn: l.offers[0]?.offeredPriceAvn ?? l.priceAvn,
@@ -372,11 +420,32 @@ export class ListingsService {
       buyerAddress: l.offers[0]?.buyerAddress ?? null,
       txid: l.txEvents[0]?.txid ?? null,
       blockHeight: l.txEvents[0]?.blockHeight ?? null,
-      soldAt: l.updatedAt,
+      date: l.updatedAt,
       ipfsHash: l.asset?.ipfsHash ?? null,
       hasIpfs: l.asset?.hasIpfs ?? false,
     }));
 
-    return { data: feed, total, page, pageSize };
+    const gifts = giftsData.map((g) => ({
+      id: g.id,
+      type: 'gift' as const,
+      assetName: g.assetName,
+      assetAmount: g.assetAmount,
+      priceAvn: null,
+      sellerAddress: g.senderAddress,
+      buyerAddress: g.recipientAddress,
+      txid: g.txid,
+      blockHeight: null,
+      date: g.createdAt,
+      ipfsHash: null,
+      hasIpfs: false,
+    }));
+
+    const merged = [...sales, ...gifts].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const total = salesTotal + giftsTotal;
+    const paged = merged.slice((page - 1) * pageSize, page * pageSize);
+
+    return { data: paged, total, page, pageSize };
   }
 }

@@ -105,6 +105,11 @@ export type AuthChallenge = $Result.DefaultSelection<Prisma.$AuthChallengePayloa
  * 
  */
 export type BlindOffer = $Result.DefaultSelection<Prisma.$BlindOfferPayload>
+/**
+ * Model Gift
+ * A completed asset gift — recorded after successful broadcast.
+ */
+export type Gift = $Result.DefaultSelection<Prisma.$GiftPayload>
 
 /**
  * Enums
@@ -136,6 +141,7 @@ export type OfferStatus = (typeof OfferStatus)[keyof typeof OfferStatus]
 export const WorkflowType: {
   LISTING: 'LISTING',
   OFFER: 'OFFER',
+  GIFT: 'GIFT',
   ESCROW: 'ESCROW',
   AUCTION: 'AUCTION'
 };
@@ -502,6 +508,16 @@ export class PrismaClient<
     * ```
     */
   get blindOffer(): Prisma.BlindOfferDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.gift`: Exposes CRUD operations for the **Gift** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Gifts
+    * const gifts = await prisma.gift.findMany()
+    * ```
+    */
+  get gift(): Prisma.GiftDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -960,7 +976,8 @@ export namespace Prisma {
     Notification: 'Notification',
     UserWatch: 'UserWatch',
     AuthChallenge: 'AuthChallenge',
-    BlindOffer: 'BlindOffer'
+    BlindOffer: 'BlindOffer',
+    Gift: 'Gift'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -979,7 +996,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "userWallet" | "listing" | "offer" | "psbtRecord" | "txEvent" | "asset" | "assetHolder" | "assetMetadata" | "assetHolderNote" | "assetHolderMetadata" | "collection" | "collectionItem" | "like" | "notification" | "userWatch" | "authChallenge" | "blindOffer"
+      modelProps: "user" | "userWallet" | "listing" | "offer" | "psbtRecord" | "txEvent" | "asset" | "assetHolder" | "assetMetadata" | "assetHolderNote" | "assetHolderMetadata" | "collection" | "collectionItem" | "like" | "notification" | "userWatch" | "authChallenge" | "blindOffer" | "gift"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2315,6 +2332,80 @@ export namespace Prisma {
           }
         }
       }
+      Gift: {
+        payload: Prisma.$GiftPayload<ExtArgs>
+        fields: Prisma.GiftFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.GiftFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.GiftFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>
+          }
+          findFirst: {
+            args: Prisma.GiftFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.GiftFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>
+          }
+          findMany: {
+            args: Prisma.GiftFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>[]
+          }
+          create: {
+            args: Prisma.GiftCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>
+          }
+          createMany: {
+            args: Prisma.GiftCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.GiftCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>[]
+          }
+          delete: {
+            args: Prisma.GiftDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>
+          }
+          update: {
+            args: Prisma.GiftUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>
+          }
+          deleteMany: {
+            args: Prisma.GiftDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.GiftUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.GiftUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>[]
+          }
+          upsert: {
+            args: Prisma.GiftUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GiftPayload>
+          }
+          aggregate: {
+            args: Prisma.GiftAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateGift>
+          }
+          groupBy: {
+            args: Prisma.GiftGroupByArgs<ExtArgs>
+            result: $Utils.Optional<GiftGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.GiftCountArgs<ExtArgs>
+            result: $Utils.Optional<GiftCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2429,6 +2520,7 @@ export namespace Prisma {
     userWatch?: UserWatchOmit
     authChallenge?: AuthChallengeOmit
     blindOffer?: BlindOfferOmit
+    gift?: GiftOmit
   }
 
   /* Types for Logging */
@@ -23407,6 +23499,1078 @@ export namespace Prisma {
 
 
   /**
+   * Model Gift
+   */
+
+  export type AggregateGift = {
+    _count: GiftCountAggregateOutputType | null
+    _avg: GiftAvgAggregateOutputType | null
+    _sum: GiftSumAggregateOutputType | null
+    _min: GiftMinAggregateOutputType | null
+    _max: GiftMaxAggregateOutputType | null
+  }
+
+  export type GiftAvgAggregateOutputType = {
+    assetAmount: Decimal | null
+    feeAvn: Decimal | null
+  }
+
+  export type GiftSumAggregateOutputType = {
+    assetAmount: Decimal | null
+    feeAvn: Decimal | null
+  }
+
+  export type GiftMinAggregateOutputType = {
+    id: string | null
+    senderAddress: string | null
+    recipientAddress: string | null
+    assetName: string | null
+    assetAmount: Decimal | null
+    txid: string | null
+    feeAvn: Decimal | null
+    createdAt: Date | null
+  }
+
+  export type GiftMaxAggregateOutputType = {
+    id: string | null
+    senderAddress: string | null
+    recipientAddress: string | null
+    assetName: string | null
+    assetAmount: Decimal | null
+    txid: string | null
+    feeAvn: Decimal | null
+    createdAt: Date | null
+  }
+
+  export type GiftCountAggregateOutputType = {
+    id: number
+    senderAddress: number
+    recipientAddress: number
+    assetName: number
+    assetAmount: number
+    txid: number
+    feeAvn: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type GiftAvgAggregateInputType = {
+    assetAmount?: true
+    feeAvn?: true
+  }
+
+  export type GiftSumAggregateInputType = {
+    assetAmount?: true
+    feeAvn?: true
+  }
+
+  export type GiftMinAggregateInputType = {
+    id?: true
+    senderAddress?: true
+    recipientAddress?: true
+    assetName?: true
+    assetAmount?: true
+    txid?: true
+    feeAvn?: true
+    createdAt?: true
+  }
+
+  export type GiftMaxAggregateInputType = {
+    id?: true
+    senderAddress?: true
+    recipientAddress?: true
+    assetName?: true
+    assetAmount?: true
+    txid?: true
+    feeAvn?: true
+    createdAt?: true
+  }
+
+  export type GiftCountAggregateInputType = {
+    id?: true
+    senderAddress?: true
+    recipientAddress?: true
+    assetName?: true
+    assetAmount?: true
+    txid?: true
+    feeAvn?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type GiftAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Gift to aggregate.
+     */
+    where?: GiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Gifts to fetch.
+     */
+    orderBy?: GiftOrderByWithRelationInput | GiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: GiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Gifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Gifts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Gifts
+    **/
+    _count?: true | GiftCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: GiftAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: GiftSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: GiftMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: GiftMaxAggregateInputType
+  }
+
+  export type GetGiftAggregateType<T extends GiftAggregateArgs> = {
+        [P in keyof T & keyof AggregateGift]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateGift[P]>
+      : GetScalarType<T[P], AggregateGift[P]>
+  }
+
+
+
+
+  export type GiftGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GiftWhereInput
+    orderBy?: GiftOrderByWithAggregationInput | GiftOrderByWithAggregationInput[]
+    by: GiftScalarFieldEnum[] | GiftScalarFieldEnum
+    having?: GiftScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: GiftCountAggregateInputType | true
+    _avg?: GiftAvgAggregateInputType
+    _sum?: GiftSumAggregateInputType
+    _min?: GiftMinAggregateInputType
+    _max?: GiftMaxAggregateInputType
+  }
+
+  export type GiftGroupByOutputType = {
+    id: string
+    senderAddress: string
+    recipientAddress: string
+    assetName: string
+    assetAmount: Decimal
+    txid: string
+    feeAvn: Decimal
+    createdAt: Date
+    _count: GiftCountAggregateOutputType | null
+    _avg: GiftAvgAggregateOutputType | null
+    _sum: GiftSumAggregateOutputType | null
+    _min: GiftMinAggregateOutputType | null
+    _max: GiftMaxAggregateOutputType | null
+  }
+
+  type GetGiftGroupByPayload<T extends GiftGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<GiftGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof GiftGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], GiftGroupByOutputType[P]>
+            : GetScalarType<T[P], GiftGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type GiftSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    senderAddress?: boolean
+    recipientAddress?: boolean
+    assetName?: boolean
+    assetAmount?: boolean
+    txid?: boolean
+    feeAvn?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["gift"]>
+
+  export type GiftSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    senderAddress?: boolean
+    recipientAddress?: boolean
+    assetName?: boolean
+    assetAmount?: boolean
+    txid?: boolean
+    feeAvn?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["gift"]>
+
+  export type GiftSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    senderAddress?: boolean
+    recipientAddress?: boolean
+    assetName?: boolean
+    assetAmount?: boolean
+    txid?: boolean
+    feeAvn?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["gift"]>
+
+  export type GiftSelectScalar = {
+    id?: boolean
+    senderAddress?: boolean
+    recipientAddress?: boolean
+    assetName?: boolean
+    assetAmount?: boolean
+    txid?: boolean
+    feeAvn?: boolean
+    createdAt?: boolean
+  }
+
+  export type GiftOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "senderAddress" | "recipientAddress" | "assetName" | "assetAmount" | "txid" | "feeAvn" | "createdAt", ExtArgs["result"]["gift"]>
+
+  export type $GiftPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Gift"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      senderAddress: string
+      recipientAddress: string
+      assetName: string
+      assetAmount: Prisma.Decimal
+      txid: string
+      feeAvn: Prisma.Decimal
+      createdAt: Date
+    }, ExtArgs["result"]["gift"]>
+    composites: {}
+  }
+
+  type GiftGetPayload<S extends boolean | null | undefined | GiftDefaultArgs> = $Result.GetResult<Prisma.$GiftPayload, S>
+
+  type GiftCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<GiftFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: GiftCountAggregateInputType | true
+    }
+
+  export interface GiftDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Gift'], meta: { name: 'Gift' } }
+    /**
+     * Find zero or one Gift that matches the filter.
+     * @param {GiftFindUniqueArgs} args - Arguments to find a Gift
+     * @example
+     * // Get one Gift
+     * const gift = await prisma.gift.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends GiftFindUniqueArgs>(args: SelectSubset<T, GiftFindUniqueArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Gift that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {GiftFindUniqueOrThrowArgs} args - Arguments to find a Gift
+     * @example
+     * // Get one Gift
+     * const gift = await prisma.gift.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends GiftFindUniqueOrThrowArgs>(args: SelectSubset<T, GiftFindUniqueOrThrowArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Gift that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GiftFindFirstArgs} args - Arguments to find a Gift
+     * @example
+     * // Get one Gift
+     * const gift = await prisma.gift.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends GiftFindFirstArgs>(args?: SelectSubset<T, GiftFindFirstArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Gift that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GiftFindFirstOrThrowArgs} args - Arguments to find a Gift
+     * @example
+     * // Get one Gift
+     * const gift = await prisma.gift.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends GiftFindFirstOrThrowArgs>(args?: SelectSubset<T, GiftFindFirstOrThrowArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Gifts that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GiftFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Gifts
+     * const gifts = await prisma.gift.findMany()
+     * 
+     * // Get first 10 Gifts
+     * const gifts = await prisma.gift.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const giftWithIdOnly = await prisma.gift.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends GiftFindManyArgs>(args?: SelectSubset<T, GiftFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Gift.
+     * @param {GiftCreateArgs} args - Arguments to create a Gift.
+     * @example
+     * // Create one Gift
+     * const Gift = await prisma.gift.create({
+     *   data: {
+     *     // ... data to create a Gift
+     *   }
+     * })
+     * 
+     */
+    create<T extends GiftCreateArgs>(args: SelectSubset<T, GiftCreateArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Gifts.
+     * @param {GiftCreateManyArgs} args - Arguments to create many Gifts.
+     * @example
+     * // Create many Gifts
+     * const gift = await prisma.gift.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends GiftCreateManyArgs>(args?: SelectSubset<T, GiftCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Gifts and returns the data saved in the database.
+     * @param {GiftCreateManyAndReturnArgs} args - Arguments to create many Gifts.
+     * @example
+     * // Create many Gifts
+     * const gift = await prisma.gift.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Gifts and only return the `id`
+     * const giftWithIdOnly = await prisma.gift.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends GiftCreateManyAndReturnArgs>(args?: SelectSubset<T, GiftCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Gift.
+     * @param {GiftDeleteArgs} args - Arguments to delete one Gift.
+     * @example
+     * // Delete one Gift
+     * const Gift = await prisma.gift.delete({
+     *   where: {
+     *     // ... filter to delete one Gift
+     *   }
+     * })
+     * 
+     */
+    delete<T extends GiftDeleteArgs>(args: SelectSubset<T, GiftDeleteArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Gift.
+     * @param {GiftUpdateArgs} args - Arguments to update one Gift.
+     * @example
+     * // Update one Gift
+     * const gift = await prisma.gift.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends GiftUpdateArgs>(args: SelectSubset<T, GiftUpdateArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Gifts.
+     * @param {GiftDeleteManyArgs} args - Arguments to filter Gifts to delete.
+     * @example
+     * // Delete a few Gifts
+     * const { count } = await prisma.gift.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends GiftDeleteManyArgs>(args?: SelectSubset<T, GiftDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Gifts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GiftUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Gifts
+     * const gift = await prisma.gift.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends GiftUpdateManyArgs>(args: SelectSubset<T, GiftUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Gifts and returns the data updated in the database.
+     * @param {GiftUpdateManyAndReturnArgs} args - Arguments to update many Gifts.
+     * @example
+     * // Update many Gifts
+     * const gift = await prisma.gift.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Gifts and only return the `id`
+     * const giftWithIdOnly = await prisma.gift.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends GiftUpdateManyAndReturnArgs>(args: SelectSubset<T, GiftUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Gift.
+     * @param {GiftUpsertArgs} args - Arguments to update or create a Gift.
+     * @example
+     * // Update or create a Gift
+     * const gift = await prisma.gift.upsert({
+     *   create: {
+     *     // ... data to create a Gift
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Gift we want to update
+     *   }
+     * })
+     */
+    upsert<T extends GiftUpsertArgs>(args: SelectSubset<T, GiftUpsertArgs<ExtArgs>>): Prisma__GiftClient<$Result.GetResult<Prisma.$GiftPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Gifts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GiftCountArgs} args - Arguments to filter Gifts to count.
+     * @example
+     * // Count the number of Gifts
+     * const count = await prisma.gift.count({
+     *   where: {
+     *     // ... the filter for the Gifts we want to count
+     *   }
+     * })
+    **/
+    count<T extends GiftCountArgs>(
+      args?: Subset<T, GiftCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], GiftCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Gift.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GiftAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends GiftAggregateArgs>(args: Subset<T, GiftAggregateArgs>): Prisma.PrismaPromise<GetGiftAggregateType<T>>
+
+    /**
+     * Group by Gift.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GiftGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends GiftGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: GiftGroupByArgs['orderBy'] }
+        : { orderBy?: GiftGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, GiftGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetGiftGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Gift model
+   */
+  readonly fields: GiftFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Gift.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__GiftClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Gift model
+   */
+  interface GiftFieldRefs {
+    readonly id: FieldRef<"Gift", 'String'>
+    readonly senderAddress: FieldRef<"Gift", 'String'>
+    readonly recipientAddress: FieldRef<"Gift", 'String'>
+    readonly assetName: FieldRef<"Gift", 'String'>
+    readonly assetAmount: FieldRef<"Gift", 'Decimal'>
+    readonly txid: FieldRef<"Gift", 'String'>
+    readonly feeAvn: FieldRef<"Gift", 'Decimal'>
+    readonly createdAt: FieldRef<"Gift", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Gift findUnique
+   */
+  export type GiftFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * Filter, which Gift to fetch.
+     */
+    where: GiftWhereUniqueInput
+  }
+
+  /**
+   * Gift findUniqueOrThrow
+   */
+  export type GiftFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * Filter, which Gift to fetch.
+     */
+    where: GiftWhereUniqueInput
+  }
+
+  /**
+   * Gift findFirst
+   */
+  export type GiftFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * Filter, which Gift to fetch.
+     */
+    where?: GiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Gifts to fetch.
+     */
+    orderBy?: GiftOrderByWithRelationInput | GiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Gifts.
+     */
+    cursor?: GiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Gifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Gifts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Gifts.
+     */
+    distinct?: GiftScalarFieldEnum | GiftScalarFieldEnum[]
+  }
+
+  /**
+   * Gift findFirstOrThrow
+   */
+  export type GiftFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * Filter, which Gift to fetch.
+     */
+    where?: GiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Gifts to fetch.
+     */
+    orderBy?: GiftOrderByWithRelationInput | GiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Gifts.
+     */
+    cursor?: GiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Gifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Gifts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Gifts.
+     */
+    distinct?: GiftScalarFieldEnum | GiftScalarFieldEnum[]
+  }
+
+  /**
+   * Gift findMany
+   */
+  export type GiftFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * Filter, which Gifts to fetch.
+     */
+    where?: GiftWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Gifts to fetch.
+     */
+    orderBy?: GiftOrderByWithRelationInput | GiftOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Gifts.
+     */
+    cursor?: GiftWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Gifts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Gifts.
+     */
+    skip?: number
+    distinct?: GiftScalarFieldEnum | GiftScalarFieldEnum[]
+  }
+
+  /**
+   * Gift create
+   */
+  export type GiftCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * The data needed to create a Gift.
+     */
+    data: XOR<GiftCreateInput, GiftUncheckedCreateInput>
+  }
+
+  /**
+   * Gift createMany
+   */
+  export type GiftCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Gifts.
+     */
+    data: GiftCreateManyInput | GiftCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Gift createManyAndReturn
+   */
+  export type GiftCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * The data used to create many Gifts.
+     */
+    data: GiftCreateManyInput | GiftCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Gift update
+   */
+  export type GiftUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * The data needed to update a Gift.
+     */
+    data: XOR<GiftUpdateInput, GiftUncheckedUpdateInput>
+    /**
+     * Choose, which Gift to update.
+     */
+    where: GiftWhereUniqueInput
+  }
+
+  /**
+   * Gift updateMany
+   */
+  export type GiftUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Gifts.
+     */
+    data: XOR<GiftUpdateManyMutationInput, GiftUncheckedUpdateManyInput>
+    /**
+     * Filter which Gifts to update
+     */
+    where?: GiftWhereInput
+    /**
+     * Limit how many Gifts to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Gift updateManyAndReturn
+   */
+  export type GiftUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * The data used to update Gifts.
+     */
+    data: XOR<GiftUpdateManyMutationInput, GiftUncheckedUpdateManyInput>
+    /**
+     * Filter which Gifts to update
+     */
+    where?: GiftWhereInput
+    /**
+     * Limit how many Gifts to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Gift upsert
+   */
+  export type GiftUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * The filter to search for the Gift to update in case it exists.
+     */
+    where: GiftWhereUniqueInput
+    /**
+     * In case the Gift found by the `where` argument doesn't exist, create a new Gift with this data.
+     */
+    create: XOR<GiftCreateInput, GiftUncheckedCreateInput>
+    /**
+     * In case the Gift was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<GiftUpdateInput, GiftUncheckedUpdateInput>
+  }
+
+  /**
+   * Gift delete
+   */
+  export type GiftDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+    /**
+     * Filter which Gift to delete.
+     */
+    where: GiftWhereUniqueInput
+  }
+
+  /**
+   * Gift deleteMany
+   */
+  export type GiftDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Gifts to delete
+     */
+    where?: GiftWhereInput
+    /**
+     * Limit how many Gifts to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Gift without action
+   */
+  export type GiftDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Gift
+     */
+    select?: GiftSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Gift
+     */
+    omit?: GiftOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -23677,6 +24841,20 @@ export namespace Prisma {
   };
 
   export type BlindOfferScalarFieldEnum = (typeof BlindOfferScalarFieldEnum)[keyof typeof BlindOfferScalarFieldEnum]
+
+
+  export const GiftScalarFieldEnum: {
+    id: 'id',
+    senderAddress: 'senderAddress',
+    recipientAddress: 'recipientAddress',
+    assetName: 'assetName',
+    assetAmount: 'assetAmount',
+    txid: 'txid',
+    feeAvn: 'feeAvn',
+    createdAt: 'createdAt'
+  };
+
+  export type GiftScalarFieldEnum = (typeof GiftScalarFieldEnum)[keyof typeof GiftScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -25282,6 +26460,75 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"BlindOffer"> | Date | string
   }
 
+  export type GiftWhereInput = {
+    AND?: GiftWhereInput | GiftWhereInput[]
+    OR?: GiftWhereInput[]
+    NOT?: GiftWhereInput | GiftWhereInput[]
+    id?: StringFilter<"Gift"> | string
+    senderAddress?: StringFilter<"Gift"> | string
+    recipientAddress?: StringFilter<"Gift"> | string
+    assetName?: StringFilter<"Gift"> | string
+    assetAmount?: DecimalFilter<"Gift"> | Decimal | DecimalJsLike | number | string
+    txid?: StringFilter<"Gift"> | string
+    feeAvn?: DecimalFilter<"Gift"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"Gift"> | Date | string
+  }
+
+  export type GiftOrderByWithRelationInput = {
+    id?: SortOrder
+    senderAddress?: SortOrder
+    recipientAddress?: SortOrder
+    assetName?: SortOrder
+    assetAmount?: SortOrder
+    txid?: SortOrder
+    feeAvn?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type GiftWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    txid?: string
+    AND?: GiftWhereInput | GiftWhereInput[]
+    OR?: GiftWhereInput[]
+    NOT?: GiftWhereInput | GiftWhereInput[]
+    senderAddress?: StringFilter<"Gift"> | string
+    recipientAddress?: StringFilter<"Gift"> | string
+    assetName?: StringFilter<"Gift"> | string
+    assetAmount?: DecimalFilter<"Gift"> | Decimal | DecimalJsLike | number | string
+    feeAvn?: DecimalFilter<"Gift"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFilter<"Gift"> | Date | string
+  }, "id" | "txid">
+
+  export type GiftOrderByWithAggregationInput = {
+    id?: SortOrder
+    senderAddress?: SortOrder
+    recipientAddress?: SortOrder
+    assetName?: SortOrder
+    assetAmount?: SortOrder
+    txid?: SortOrder
+    feeAvn?: SortOrder
+    createdAt?: SortOrder
+    _count?: GiftCountOrderByAggregateInput
+    _avg?: GiftAvgOrderByAggregateInput
+    _max?: GiftMaxOrderByAggregateInput
+    _min?: GiftMinOrderByAggregateInput
+    _sum?: GiftSumOrderByAggregateInput
+  }
+
+  export type GiftScalarWhereWithAggregatesInput = {
+    AND?: GiftScalarWhereWithAggregatesInput | GiftScalarWhereWithAggregatesInput[]
+    OR?: GiftScalarWhereWithAggregatesInput[]
+    NOT?: GiftScalarWhereWithAggregatesInput | GiftScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Gift"> | string
+    senderAddress?: StringWithAggregatesFilter<"Gift"> | string
+    recipientAddress?: StringWithAggregatesFilter<"Gift"> | string
+    assetName?: StringWithAggregatesFilter<"Gift"> | string
+    assetAmount?: DecimalWithAggregatesFilter<"Gift"> | Decimal | DecimalJsLike | number | string
+    txid?: StringWithAggregatesFilter<"Gift"> | string
+    feeAvn?: DecimalWithAggregatesFilter<"Gift"> | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeWithAggregatesFilter<"Gift"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     address: string
@@ -26774,6 +28021,83 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type GiftCreateInput = {
+    id?: string
+    senderAddress: string
+    recipientAddress: string
+    assetName: string
+    assetAmount: Decimal | DecimalJsLike | number | string
+    txid: string
+    feeAvn: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+  }
+
+  export type GiftUncheckedCreateInput = {
+    id?: string
+    senderAddress: string
+    recipientAddress: string
+    assetName: string
+    assetAmount: Decimal | DecimalJsLike | number | string
+    txid: string
+    feeAvn: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+  }
+
+  export type GiftUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderAddress?: StringFieldUpdateOperationsInput | string
+    recipientAddress?: StringFieldUpdateOperationsInput | string
+    assetName?: StringFieldUpdateOperationsInput | string
+    assetAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    txid?: StringFieldUpdateOperationsInput | string
+    feeAvn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GiftUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderAddress?: StringFieldUpdateOperationsInput | string
+    recipientAddress?: StringFieldUpdateOperationsInput | string
+    assetName?: StringFieldUpdateOperationsInput | string
+    assetAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    txid?: StringFieldUpdateOperationsInput | string
+    feeAvn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GiftCreateManyInput = {
+    id?: string
+    senderAddress: string
+    recipientAddress: string
+    assetName: string
+    assetAmount: Decimal | DecimalJsLike | number | string
+    txid: string
+    feeAvn: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+  }
+
+  export type GiftUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderAddress?: StringFieldUpdateOperationsInput | string
+    recipientAddress?: StringFieldUpdateOperationsInput | string
+    assetName?: StringFieldUpdateOperationsInput | string
+    assetAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    txid?: StringFieldUpdateOperationsInput | string
+    feeAvn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GiftUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderAddress?: StringFieldUpdateOperationsInput | string
+    recipientAddress?: StringFieldUpdateOperationsInput | string
+    assetName?: StringFieldUpdateOperationsInput | string
+    assetAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    txid?: StringFieldUpdateOperationsInput | string
+    feeAvn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -28054,6 +29378,49 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumBlindOfferStatusFilter<$PrismaModel>
     _max?: NestedEnumBlindOfferStatusFilter<$PrismaModel>
+  }
+
+  export type GiftCountOrderByAggregateInput = {
+    id?: SortOrder
+    senderAddress?: SortOrder
+    recipientAddress?: SortOrder
+    assetName?: SortOrder
+    assetAmount?: SortOrder
+    txid?: SortOrder
+    feeAvn?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type GiftAvgOrderByAggregateInput = {
+    assetAmount?: SortOrder
+    feeAvn?: SortOrder
+  }
+
+  export type GiftMaxOrderByAggregateInput = {
+    id?: SortOrder
+    senderAddress?: SortOrder
+    recipientAddress?: SortOrder
+    assetName?: SortOrder
+    assetAmount?: SortOrder
+    txid?: SortOrder
+    feeAvn?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type GiftMinOrderByAggregateInput = {
+    id?: SortOrder
+    senderAddress?: SortOrder
+    recipientAddress?: SortOrder
+    assetName?: SortOrder
+    assetAmount?: SortOrder
+    txid?: SortOrder
+    feeAvn?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type GiftSumOrderByAggregateInput = {
+    assetAmount?: SortOrder
+    feeAvn?: SortOrder
   }
 
   export type BlindOfferCreateNestedManyWithoutBuyerInput = {

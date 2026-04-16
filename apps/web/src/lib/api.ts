@@ -68,6 +68,8 @@ export const api = {
     apiFetch<{ data: unknown[]; total: number }>(`/listings?seller=${encodeURIComponent(address)}&pageSize=12`),
   getSaleHistory: (address: string, page = 1) =>
     apiFetch<{ data: unknown[]; total: number }>(`/listings/sales/by-address?address=${encodeURIComponent(address)}&page=${page}&pageSize=20`),
+  getGiftHistory: (address: string, page = 1) =>
+    apiFetch<{ data: unknown[]; total: number }>(`/listings/gifts/by-address?address=${encodeURIComponent(address)}&page=${page}&pageSize=20`),
   getListing: (id: string) =>
     apiFetch<unknown>(`/listings/${id}`),
   createListing: (dto: unknown, token: string) =>
@@ -127,6 +129,18 @@ export const api = {
     }),
   submitSignedPsbt: (dto: unknown, token: string) =>
     apiFetch<{ txid: string }>('/psbt/submit', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+      token,
+    }),
+  buildGiftPsbt: (dto: { senderAddress: string; recipientAddress: string; assetName: string; assetAmount: number }, token: string) =>
+    apiFetch<{ psbtBase64: string; decoded: unknown }>('/psbt/build/gift', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+      token,
+    }),
+  submitGift: (dto: { psbtBase64: string; senderAddress: string; recipientAddress: string; assetName: string; assetAmount: number }, token: string) =>
+    apiFetch<{ txid: string }>('/psbt/submit/gift', {
       method: 'POST',
       body: JSON.stringify(dto),
       token,

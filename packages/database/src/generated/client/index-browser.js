@@ -326,6 +326,17 @@ exports.Prisma.BlindOfferScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.GiftScalarFieldEnum = {
+  id: 'id',
+  senderAddress: 'senderAddress',
+  recipientAddress: 'recipientAddress',
+  assetName: 'assetName',
+  assetAmount: 'assetAmount',
+  txid: 'txid',
+  feeAvn: 'feeAvn',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -371,6 +382,7 @@ exports.OfferStatus = exports.$Enums.OfferStatus = {
 exports.WorkflowType = exports.$Enums.WorkflowType = {
   LISTING: 'LISTING',
   OFFER: 'OFFER',
+  GIFT: 'GIFT',
   ESCROW: 'ESCROW',
   AUCTION: 'AUCTION'
 };
@@ -421,7 +433,8 @@ exports.Prisma.ModelName = {
   Notification: 'Notification',
   UserWatch: 'UserWatch',
   AuthChallenge: 'AuthChallenge',
-  BlindOffer: 'BlindOffer'
+  BlindOffer: 'BlindOffer',
+  Gift: 'Gift'
 };
 
 /**

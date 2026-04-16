@@ -283,6 +283,60 @@ buyer can complete the purchase immediately using the same steps as Workflow 2.
 
 ---
 
+## Workflow 4: Gift (Transfer Asset Without Payment)
+
+### Goal
+Send an asset to another address without any AVN payment in return. The sender
+pays only the network fee. After successful broadcast, the app records the gift
+in the `gifts` table for activity reporting and history.
+
+### Participants
+- **Sender** — owns the asset
+- **App** — builds the PSBT and broadcasts, never holds keys
+
+### Step-by-step
+
+```
+1. Sender → App:  POST /psbt/build/gift
+   Body: { senderAddress, recipientAddress, assetName, assetAmount }
+   App:
+     - Finds asset UTXO via getaddressutxos (address index)
+     - Finds smallest AVN UTXO >= 0.001 AVN at the sender address for fee
+     - Builds bare PSBT via createpsbt
+     - Enriches with utxoupdatepsbt
+   Returns: { psbtBase64, decoded, fee }
+
+   PSBT structure:
+     Inputs:
+       [0] sender's asset UTXO  (nValue = 0; carries only the asset)
+       [1] sender's AVN UTXO    (for network fee)
+     Outputs:
+       [0] asset transfer to recipient  (OP_AVN_ASSET)
+       [1] AVN change to sender         (AVN input − 0.001 fee)
+     Implicit fee: 0.001 AVN (unaccounted AVN becomes miner fee)
+
+2. Sender: signs the PSBT in Avian Core:
+   avian-cli walletprocesspsbt "<psbt>" true "ALL|FORKID"
+   Both inputs belong to the sender, so ALL|FORKID covers everything.
+
+3. Sender → App:  POST /psbt/submit/gift
+   Body: { psbtBase64 (signed), senderAddress, recipientAddress, assetName, assetAmount }
+   App: finalizepsbt → testmempoolaccept → sendrawtransaction → records Gift in DB
+   Returns: { txid }
+```
+
+### Key differences from marketplace workflows
+
+| | Marketplace (Workflows 1–3) | Gift (Workflow 4) |
+|-|----------------------------|-------------------|
+| Sighash | `SINGLE\|FORKID\|ANYONECANPAY` (seller) + `ALL\|FORKID` (buyer) | `ALL\|FORKID` (sender only) |
+| Validation | `analyzepsbt` + `validateComplete()` | Skip `analyzepsbt` (miscalculates asset output fees); rely on `finalizepsbt` + `testmempoolaccept` |
+| Inputs | Multi-party (seller asset + buyer AVN) | Single-party (sender asset + sender AVN) |
+| Database records | Listing, Offer, PsbtRecord | Gift (sender, recipient, asset, amount, txid, fee) |
+| Fee handling | Buyer pays via `walletcreatefundedpsbt` | Explicit: `AVN input − change = fee` |
+
+---
+
 ## Future Considerations
 
 ### Escrow
@@ -354,4 +408,15 @@ avian-cli testmempoolaccept '["<hex_tx>"]'
 
 # Broadcast
 avian-cli sendrawtransaction "<hex_tx>"
+
+# ─── Gift (Workflow 4) ────────────────────────────────────────────────────────
+
+# Build gift PSBT — asset transfer + AVN fee input
+# Asset UTXO has nValue=0; only the AVN UTXO contributes to fee budget
+avian-cli createpsbt \
+  '[{"txid":"<assetUtxoTxid>","vout":0},{"txid":"<avnUtxoTxid>","vout":1}]' \
+  '[{"<recipientAddr>":{"transfer":{"<ASSET>":<amount>}}},{"<senderAddr>":0.999}]'
+
+# Sender signs (ALL|FORKID — single party, both inputs belong to sender)
+avian-cli walletprocesspsbt "<psbt>" true "ALL|FORKID"
 ```

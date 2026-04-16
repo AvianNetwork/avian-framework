@@ -54,6 +54,7 @@ docs/         PSBT workflow spec + guides
 - **Asset marketplace** — list Avian assets for sale; buyers browse and make offers
 - **Blind offers** — buyers make open offers on an asset without a specific listing
 - **Non-custodial PSBT execution** — atomic asset + AVN swap; no private keys server-side
+- **Asset gifting** — transfer assets to any address with a simple PSBT flow
 - **User profiles** — usernames, avatars, bio, linked wallets, sale history
 - **Collections** — group assets under a named collection with cover art and description
 - **Watch users** — follow an address and get notified when they create a new listing
@@ -209,6 +210,12 @@ $DC exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB    # open psql shell
 
 See [docs/psbt-workflow-spec.md](docs/psbt-workflow-spec.md) for the full spec.
 
+**Gift flow (transfer asset to another address):**
+
+1. Sender calls `POST /psbt/build/gift` → receives unsigned PSBT
+2. Sender signs with `walletprocesspsbt "<PSBT>" true "ALL|FORKID"` in Avian Core
+3. Sender submits signed PSBT to `POST /psbt/submit/gift` → finalized and broadcast
+
 **Listing flow (sell asset for AVN):**
 
 1. Seller calls `POST /psbt/build/listing` → receives unsigned PSBT
@@ -240,7 +247,7 @@ All routes are prefixed with `/api/v1`. Full interactive documentation is availa
 | `listings` | `GET /listings/stats` · `GET /listings/sales/by-address` |
 | `offers` | `POST /offers` · `PATCH /offers/:id/accept` · `POST /offers/:id/combine-psbt` · `POST /offers/:id/complete` |
 | `blind-offers` | `POST /blind-offers` · `GET /blind-offers/received` · `POST /blind-offers/:id/accept` |
-| `psbt` | `POST /psbt/build/listing` · `POST /psbt/decode` · `POST /psbt/submit` |
+| `psbt` | `POST /psbt/build/listing` · `POST /psbt/decode` · `POST /psbt/submit` · `POST /psbt/build/gift` · `POST /psbt/submit/gift` |
 | `users` | `GET /users/:username` · `PATCH /users/me` · `POST /users/me/link-wallet` |
 | `notifications` | `GET /notifications` · `PATCH /notifications/:id/read` |
 | `watches` | `POST /watches/:address` · `DELETE /watches/:address` |

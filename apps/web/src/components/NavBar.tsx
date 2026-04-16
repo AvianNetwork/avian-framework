@@ -32,6 +32,7 @@ export function NavBar() {
       <a href="/activity" className="hover:text-white transition-colors">Activity</a>
       <a href="/assets" className="hover:text-white transition-colors">Assets</a>
       <a href="/collections" className="hover:text-white transition-colors">Collections</a>
+      {isConnected && <a href="/gift" className="hover:text-white transition-colors">Gift</a>}
       {isConnected && <a href="/trades" className="hover:text-white transition-colors">Trades</a>}
       {isConnected && <a href="/offers" className="hover:text-white transition-colors">My Offers</a>}
       {isConnected && <a href="/blind-offers" className="hover:text-white transition-colors">Blind Offers</a>}
@@ -155,6 +156,7 @@ export function NavBar() {
             {isConnected && (
               <>
                 <div className="border-t border-gray-800 my-1" />
+                <a href="/gift" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Gift</a>
                 <a href="/trades" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Trades</a>
                 <a href="/offers" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">My Offers</a>
                 <a href="/blind-offers" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Blind Offers</a>

@@ -1,18 +1,19 @@
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { IpfsImage } from '@/components/ui/IpfsImage';
-import { ArrowRight, Activity } from 'lucide-react';
+import { ArrowRight, Activity, Gift } from 'lucide-react';
 
 interface FeedItem {
   id: string;
+  type: 'sale' | 'gift';
   assetName: string;
   assetAmount: number;
-  priceAvn: number;
+  priceAvn: number | null;
   sellerAddress: string;
   buyerAddress: string | null;
   txid: string | null;
   blockHeight: number | null;
-  soldAt: string;
+  date: string;
   ipfsHash: string | null;
   hasIpfs: boolean;
 }
@@ -44,7 +45,7 @@ export default async function ActivityPage({
         <Activity className="w-7 h-7 text-avian-400" />
         <div>
           <h1 className="text-3xl font-bold">Activity Feed</h1>
-          <p className="text-gray-400 mt-1">Recent sales across the marketplace</p>
+          <p className="text-gray-400 mt-1">Recent sales and gifts across the marketplace</p>
         </div>
       </div>
 
@@ -96,48 +97,65 @@ export default async function ActivityPage({
         </div>
       ) : (
         <div className="space-y-3">
-          {feed.map((item) => (
-            <a
-              key={item.id}
-              href={`/listings/${item.id}`}
-              className="card p-4 flex items-center gap-4 hover:border-avian-700 transition-colors"
-            >
-              {/* Asset image */}
-              <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-800 shrink-0">
-                {item.hasIpfs && item.ipfsHash && (
-                  <IpfsImage hash={item.ipfsHash} alt={item.assetName} className="w-full h-full object-cover" />
-                )}
-              </div>
+          {feed.map((item) => {
+            const isGift = item.type === 'gift';
+            const Wrapper = isGift ? 'div' : 'a';
+            const wrapperProps = isGift
+              ? {}
+              : { href: `/listings/${item.id}` };
+            return (
+              <Wrapper
+                key={item.id}
+                {...wrapperProps}
+                className="card p-4 flex items-center gap-4 hover:border-avian-700 transition-colors"
+              >
+                {/* Asset image */}
+                <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-800 shrink-0 flex items-center justify-center">
+                  {item.hasIpfs && item.ipfsHash ? (
+                    <IpfsImage hash={item.ipfsHash} alt={item.assetName} className="w-full h-full object-cover" />
+                  ) : isGift ? (
+                    <Gift className="w-6 h-6 text-pink-400" />
+                  ) : null}
+                </div>
 
-              {/* Sale details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-white">{item.assetName}</p>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300">
-                    Sale
-                  </span>
-                  {Number(item.assetAmount) > 1 && (
-                    <span className="text-xs text-gray-500">×{Number(item.assetAmount)}</span>
+                {/* Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-white">{item.assetName}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      isGift
+                        ? 'bg-pink-900/40 text-pink-300'
+                        : 'bg-blue-900/40 text-blue-300'
+                    }`}>
+                      {isGift ? 'Gift' : 'Sale'}
+                    </span>
+                    {Number(item.assetAmount) > 1 && (
+                      <span className="text-xs text-gray-500">×{Number(item.assetAmount)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-400">
+                    <span className="font-mono">{short(item.sellerAddress)}</span>
+                    <ArrowRight className="w-3 h-3 text-gray-600 shrink-0" />
+                    <span className="font-mono">
+                      {item.buyerAddress ? short(item.buyerAddress) : '—'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Price & timestamp */}
+                <div className="text-right shrink-0">
+                  {isGift ? (
+                    <p className="font-bold text-pink-400">Gift</p>
+                  ) : (
+                    <p className="font-bold text-avian-400">
+                      {Number(item.priceAvn)} <span className="text-sm font-normal text-gray-400">AVN</span>
+                    </p>
                   )}
+                  <p className="text-xs text-gray-500 mt-0.5">{formatDate(item.date)}</p>
                 </div>
-                <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-400">
-                  <span className="font-mono">{short(item.sellerAddress)}</span>
-                  <ArrowRight className="w-3 h-3 text-gray-600 shrink-0" />
-                  <span className="font-mono">
-                    {item.buyerAddress ? short(item.buyerAddress) : '—'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Price & timestamp */}
-              <div className="text-right shrink-0">
-                <p className="font-bold text-avian-400">
-                  {Number(item.priceAvn)} <span className="text-sm font-normal text-gray-400">AVN</span>
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">{formatDate(item.soldAt)}</p>
-              </div>
-            </a>
-          ))}
+              </Wrapper>
+            );
+          })}
         </div>
       )}
 

@@ -53,9 +53,19 @@ export interface RpcInput {
   sequence?: number;
 }
 
-export interface RpcOutput {
-  [address: string]: number;
+export type RpcOutput = Record<string, number | { transfer: Record<string, number> }>;
+
+/**
+ * Asset transfer output for `walletcreatefundedpsbt`.
+ * Format: { asset_transfer: { name, amount }, address }
+ */
+export interface RpcAssetTransferOutput {
+  asset_transfer: { name: string; amount: number };
+  address: string;
 }
+
+/** Output entry accepted by `walletcreatefundedpsbt` — plain AVN or asset transfer. */
+export type RpcFundedOutput = RpcOutput | RpcAssetTransferOutput;
 
 export interface RpcDecodedInput {
   txid: string;

@@ -59,6 +59,16 @@ export class ListingsController {
     return this.listings.getSales(address, Number(page), Number(pageSize));
   }
 
+  @Get('gifts/by-address')
+  @ApiOperation({ summary: 'Get gifts for an address (as sender or recipient)' })
+  getGiftsByAddress(
+    @Query('address') address: string,
+    @Query('page') page = 1,
+    @Query('pageSize') pageSize = 20,
+  ) {
+    return this.listings.getGiftsByAddress(address, Number(page), Number(pageSize));
+  }
+
   @Get('history/:assetName')
   @ApiOperation({ summary: 'Get trade history for a specific asset' })
   getAssetHistory(
@@ -70,7 +80,7 @@ export class ListingsController {
   }
 
   @Get('activity')
-  @ApiOperation({ summary: 'Global activity feed — recent completed sales' })
+  @ApiOperation({ summary: 'Global activity feed — recent sales and gifts' })
   getActivityFeed(
     @Query('page') page = 1,
     @Query('pageSize') pageSize = 30,

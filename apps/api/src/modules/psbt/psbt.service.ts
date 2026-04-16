@@ -1,5 +1,5 @@
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AvianRpcClient } from '@avian-framework/avian-rpc';
 import { PsbtBuilder, PsbtValidator } from '@avian-framework/psbt-sdk';
@@ -35,6 +35,37 @@ export class SubmitSignedPsbtDto {
   @ApiProperty({ description: 'Buyer-signed combined PSBT ready to broadcast, from `walletprocesspsbt "..." true "ALL"` in Avian Core', example: 'cHNidP8B...' })
   /** Buyer-signed combined PSBT, ready to finalize */
   @IsString() @IsNotEmpty() psbtBase64!: string;
+}
+
+export class BuildGiftPsbtDto {
+  @ApiProperty({ description: 'Sender\'s Avian wallet address', example: 'RCwfUYQCsKee7WviEHxsLMaH1NQNnJPHzF' })
+  @IsString() @IsNotEmpty() senderAddress!: string;
+
+  @ApiProperty({ description: 'Recipient\'s Avian wallet address', example: 'RDhoRWhxGLEDi1hnmdUAjRwgH5aGhS2Rh9' })
+  @IsString() @IsNotEmpty() recipientAddress!: string;
+
+  @ApiProperty({ description: 'Name of the Avian asset to gift', example: 'AVIANWALLPAPER' })
+  @IsString() @IsNotEmpty() assetName!: string;
+
+  @ApiProperty({ description: 'Amount of the asset to gift', example: 1 })
+  @IsNotEmpty() assetAmount!: number;
+}
+
+export class SubmitGiftDto {
+  @ApiProperty({ description: 'Signed PSBT ready to broadcast, from `walletprocesspsbt "..." true "ALL|FORKID"` in Avian Core', example: 'cHNidP8B...' })
+  @IsString() @IsNotEmpty() psbtBase64!: string;
+
+  @ApiProperty({ description: 'Sender address (for record-keeping)', example: 'RCwfUYQCsKee7WviEHxsLMaH1NQNnJPHzF' })
+  @IsString() @IsNotEmpty() senderAddress!: string;
+
+  @ApiProperty({ description: 'Recipient address', example: 'RDhoRWhxGLEDi1hnmdUAjRwgH5aGhS2Rh9' })
+  @IsString() @IsNotEmpty() recipientAddress!: string;
+
+  @ApiProperty({ description: 'Asset name', example: 'AVIANWALLPAPER' })
+  @IsString() @IsNotEmpty() assetName!: string;
+
+  @ApiProperty({ description: 'Asset amount', example: 1 })
+  @IsNumber() @IsNotEmpty() assetAmount!: number;
 }
 
 @Injectable()
@@ -132,6 +163,117 @@ export class PsbtService {
         assetAmount: 0,
         priceAvn: 0,
         listingId: dto.listingId,
+      },
+    });
+
+    return { txid };
+  }
+
+  // ─── Gift Flow ────────────────────────────────────────────────────────────────
+
+  /** Estimated miner fee — whatever AVN is unaccounted for becomes the fee. */
+  private static readonly GIFT_FEE_AVN = 0.001;
+
+  /**
+   * Build an unsigned gift PSBT using `createpsbt`.
+   *
+   * Inputs:
+   *   [0] asset UTXO  — carries the asset (nValue = 0, contributes no AVN)
+   *   [1] AVN UTXO    — pays the miner fee
+   *
+   * Outputs:
+   *   [0] asset transfer to recipient via OP_AVN_ASSET
+   *   [1] AVN change back to sender  (AVN input − fee)
+   *
+   * The implicit fee is AVN_input − change.
+   * User signs with `walletprocesspsbt "..." true "ALL|FORKID"`.
+   */
+  async buildGiftPsbt(dto: BuildGiftPsbtDto) {
+    // 1. Find asset UTXO (nValue = 0; only carries the asset)
+    const assetUtxos = await this.rpc.getAddressUtxos([dto.senderAddress], dto.assetName);
+    const assetUtxo = assetUtxos.find((u) => u.satoshis / 1e8 >= dto.assetAmount);
+    if (!assetUtxo) {
+      throw new BadRequestException(
+        `No confirmed UTXO found for asset "${dto.assetName}" (need ${dto.assetAmount}) ` +
+        `at address ${dto.senderAddress}.`
+      );
+    }
+
+    // 2. Find AVN UTXO for fee — smallest one that covers the fee
+    const feeAvn = PsbtService.GIFT_FEE_AVN;
+    const feeSat = Math.ceil(feeAvn * 1e8);
+    const avnUtxos = await this.rpc.getAddressUtxos([dto.senderAddress]);
+    const feeUtxo = avnUtxos
+      .filter((u) => u.satoshis >= feeSat && (!u.assetName || u.assetName === 'AVN'))
+      .sort((a, b) => a.satoshis - b.satoshis)[0];
+    if (!feeUtxo) {
+      throw new BadRequestException(
+        `No AVN UTXO >= ${feeAvn} AVN at ${dto.senderAddress} to cover the network fee.`
+      );
+    }
+
+    // 3. Change = AVN input − fee  (asset UTXO contributes 0 AVN)
+    const avnInput = feeUtxo.satoshis / 1e8;
+    const changeAvn = Number((avnInput - feeAvn).toFixed(8));
+
+    // 4. Build bare PSBT
+    const inputs = [
+      { txid: assetUtxo.txid, vout: assetUtxo.outputIndex },
+      { txid: feeUtxo.txid,   vout: feeUtxo.outputIndex },
+    ];
+    const outputs: Record<string, number | { transfer: Record<string, number> }>[] = [
+      { [dto.recipientAddress]: { transfer: { [dto.assetName]: dto.assetAmount } } },
+    ];
+    if (changeAvn > 0.00001) {
+      outputs.push({ [dto.senderAddress]: changeAvn });
+    }
+
+    const psbtBase64 = await this.rpc.createPsbt(inputs, outputs);
+
+    // 5. Attach UTXO data so the signer can verify amounts
+    const enriched = await this.rpc.utxoUpdatePsbt(psbtBase64);
+    const decoded  = await this.rpc.decodePsbt(enriched);
+
+    return { psbtBase64: enriched, decoded, fee: feeAvn };
+  }
+
+  /**
+   * Submit a signed gift PSBT for finalization and broadcast.
+   *
+   * NOTE: We skip the analyzePsbt-based `validateComplete()` check here
+   * because Avian Core's `analyzepsbt` miscalculates fees for asset-transfer
+   * outputs (OP_AVN_ASSET scripts). Instead we rely on `finalizepsbt` (fails
+   * if any input is unsigned) and `testmempoolaccept` (consensus validation).
+   */
+  async submitGift(_senderAddress: string, dto: SubmitGiftDto) {
+    // Finalize — converts partial signatures to scriptSig.  Fails if unsigned.
+    const finalized = await this.rpc.finalizePsbt(dto.psbtBase64, true);
+    if (!finalized.complete || !finalized.hex) {
+      throw new BadRequestException(
+        'PSBT finalization failed — ensure all inputs are signed with ' +
+        '`walletprocesspsbt "..." true "ALL|FORKID"`.'
+      );
+    }
+
+    // Consensus-level validation before broadcast
+    const [acceptance] = await this.rpc.testMempoolAccept([finalized.hex]);
+    if (!acceptance?.allowed) {
+      throw new BadRequestException(
+        `Transaction rejected by mempool: ${acceptance?.reject_reason ?? 'unknown'}`
+      );
+    }
+
+    const txid = await this.rpc.sendRawTransaction(finalized.hex);
+
+    // Record the gift for activity tracking
+    await this.db.gift.create({
+      data: {
+        senderAddress: dto.senderAddress,
+        recipientAddress: dto.recipientAddress,
+        assetName: dto.assetName,
+        assetAmount: dto.assetAmount,
+        txid,
+        feeAvn: PsbtService.GIFT_FEE_AVN,
       },
     });
 

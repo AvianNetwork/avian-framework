@@ -4,6 +4,7 @@ import type {
   RpcUtxo,
   RpcInput,
   RpcOutput,
+  RpcFundedOutput,
   CreatePsbtOptions,
   CreatePsbtResult,
   ProcessPsbtResult,
@@ -127,7 +128,7 @@ export class AvianRpcClient {
    * Use this for buyer payment inputs.
    */
   async walletCreateFundedPsbt(
-    outputs: RpcOutput | RpcOutput[],
+    outputs: (RpcFundedOutput)[],
     locktime = 0,
     options?: WalletCreateFundedPsbtOptions
   ): Promise<CreatePsbtResult> {

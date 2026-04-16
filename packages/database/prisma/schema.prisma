@@ -333,6 +333,24 @@ model BlindOffer {
   @@map("blind_offers")
 }
 
+/// A completed asset gift — recorded after successful broadcast.
+model Gift {
+  id               String     @id @default(cuid())
+  senderAddress    String
+  recipientAddress String
+  assetName        String
+  assetAmount      Decimal    @db.Decimal(20, 8)
+  txid             String     @unique
+  feeAvn           Decimal    @db.Decimal(20, 8)
+  createdAt        DateTime   @default(now())
+
+  @@index([senderAddress])
+  @@index([recipientAddress])
+  @@index([assetName])
+  @@index([txid])
+  @@map("gifts")
+}
+
 enum ListingStatus {
   ACTIVE
   SOLD
@@ -353,6 +371,7 @@ enum OfferStatus {
 enum WorkflowType {
   LISTING
   OFFER
+  GIFT
   ESCROW
   AUCTION
 }
