@@ -1,12 +1,13 @@
 import { Controller, Post, Body, UseGuards, Get, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
 import { PsbtService, BuildListingPsbtDto, SubmitSignedPsbtDto, BuildGiftPsbtDto, SubmitGiftDto } from './psbt.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { SyncGuard } from '../../guards/sync.guard.js';
 import { IsString, IsNotEmpty } from 'class-validator';
 
 class DecodePsbtDto {
+  @ApiProperty({ description: 'Base64-encoded PSBT to decode for UI display', example: 'cHNidP8B...' })
   @IsString() @IsNotEmpty() psbtBase64!: string;
 }
 
