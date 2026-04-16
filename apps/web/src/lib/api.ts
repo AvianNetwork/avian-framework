@@ -277,6 +277,16 @@ export const api = {
   // Health
   getHealth: () =>
     apiFetch<{ status: string; syncing: boolean; blocks: number; headers: number; progress: number; chain: string }>('/health'),
+
+  // ─── History & Activity ──────────────────────────────────────────────────
+  getAssetHistory: (assetName: string, page = 1) =>
+    apiFetch<{ data: unknown[]; total: number; page: number; pageSize: number }>(
+      `/listings/history/${encodeURIComponent(assetName)}?page=${page}&pageSize=20`
+    ),
+  getActivityFeed: (page = 1) =>
+    apiFetch<{ data: unknown[]; total: number; page: number; pageSize: number }>(
+      `/listings/activity?page=${page}&pageSize=30`
+    ),
 };
 
 

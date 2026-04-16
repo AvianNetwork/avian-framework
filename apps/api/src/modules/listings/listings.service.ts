@@ -295,4 +295,88 @@ export class ListingsService {
       lastSaleAt,
     };
   }
+
+  /** Trade history for a specific asset — all completed sales */
+  async getAssetHistory(assetName: string, page = 1, pageSize = 20) {
+    const where = { status: 'SOLD' as const, assetName };
+    const [data, total] = await Promise.all([
+      this.db.listing.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          asset: { select: { ipfsHash: true, hasIpfs: true } },
+          offers: {
+            where: { status: 'COMPLETED' },
+            select: { buyerAddress: true, offeredPriceAvn: true },
+            take: 1,
+          },
+          txEvents: {
+            where: { type: 'CONFIRMED' },
+            select: { txid: true, blockHeight: true },
+            take: 1,
+          },
+        },
+      }),
+      this.db.listing.count({ where }),
+    ]);
+
+    const sales = data.map((l) => ({
+      id: l.id,
+      assetName: l.assetName,
+      assetAmount: l.assetAmount,
+      priceAvn: l.offers[0]?.offeredPriceAvn ?? l.priceAvn,
+      sellerAddress: l.sellerAddress,
+      buyerAddress: l.offers[0]?.buyerAddress ?? null,
+      txid: l.txEvents[0]?.txid ?? null,
+      blockHeight: l.txEvents[0]?.blockHeight ?? null,
+      soldAt: l.updatedAt,
+    }));
+
+    return { data: sales, total, page, pageSize };
+  }
+
+  /** Global activity feed — recent completed sales across all assets */
+  async getActivityFeed(page = 1, pageSize = 30) {
+    const where = { status: 'SOLD' as const };
+    const [data, total] = await Promise.all([
+      this.db.listing.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          asset: { select: { ipfsHash: true, hasIpfs: true } },
+          offers: {
+            where: { status: 'COMPLETED' },
+            select: { buyerAddress: true, offeredPriceAvn: true },
+            take: 1,
+          },
+          txEvents: {
+            where: { type: 'CONFIRMED' },
+            select: { txid: true, blockHeight: true },
+            take: 1,
+          },
+        },
+      }),
+      this.db.listing.count({ where }),
+    ]);
+
+    const feed = data.map((l) => ({
+      id: l.id,
+      assetName: l.assetName,
+      assetAmount: l.assetAmount,
+      priceAvn: l.offers[0]?.offeredPriceAvn ?? l.priceAvn,
+      sellerAddress: l.sellerAddress,
+      buyerAddress: l.offers[0]?.buyerAddress ?? null,
+      txid: l.txEvents[0]?.txid ?? null,
+      blockHeight: l.txEvents[0]?.blockHeight ?? null,
+      soldAt: l.updatedAt,
+      ipfsHash: l.asset?.ipfsHash ?? null,
+      hasIpfs: l.asset?.hasIpfs ?? false,
+    }));
+
+    return { data: feed, total, page, pageSize };
+  }
 }

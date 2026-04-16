@@ -73,6 +73,25 @@ export class ListingsController {
     return this.listings.getSales(address, Number(page), Number(pageSize));
   }
 
+  @Get('history/:assetName')
+  @ApiOperation({ summary: 'Get trade history for a specific asset' })
+  getAssetHistory(
+    @Param('assetName') assetName: string,
+    @Query('page') page = 1,
+    @Query('pageSize') pageSize = 20,
+  ) {
+    return this.listings.getAssetHistory(assetName, Number(page), Number(pageSize));
+  }
+
+  @Get('activity')
+  @ApiOperation({ summary: 'Global activity feed — recent completed sales' })
+  getActivityFeed(
+    @Query('page') page = 1,
+    @Query('pageSize') pageSize = 30,
+  ) {
+    return this.listings.getActivityFeed(Number(page), Number(pageSize));
+  }
+
   @Get('stats')
   @ApiOperation({ summary: 'Get marketplace stats; pass ?asset= for per-asset stats' })
   getStats(@Query('asset') asset?: string) {

@@ -143,6 +143,12 @@ export function AssetGrid({ assets }: Props) {
                   View Listings
                 </a>
               )}
+              <a
+                href={`/assets/${encodeURIComponent(asset.name)}/history`}
+                className="btn-secondary text-xs py-1 flex-1 text-center"
+              >
+                Trade History
+              </a>
               {isOwner ? (
                 <a
                   href={`/listings/create?asset=${encodeURIComponent(asset.name)}`}

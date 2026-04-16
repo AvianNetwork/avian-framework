@@ -29,8 +29,10 @@ export function NavBar() {
   const navLinks = (
     <>
       <a href="/marketplace" className="hover:text-white transition-colors">Marketplace</a>
+      <a href="/activity" className="hover:text-white transition-colors">Activity</a>
       <a href="/assets" className="hover:text-white transition-colors">Assets</a>
       <a href="/collections" className="hover:text-white transition-colors">Collections</a>
+      {isConnected && <a href="/trades" className="hover:text-white transition-colors">Trades</a>}
       {isConnected && <a href="/offers" className="hover:text-white transition-colors">My Offers</a>}
       {isConnected && <a href="/blind-offers" className="hover:text-white transition-colors">Blind Offers</a>}
       {isConnected && <a href="/blind-offers/received" className="hover:text-white transition-colors">Received</a>}
@@ -147,11 +149,13 @@ export function NavBar() {
         {showMobileMenu && (
           <div className="md:hidden border-t border-gray-800 bg-gray-900 px-4 py-3 flex flex-col gap-1 text-sm text-gray-400">
             <a href="/marketplace" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Marketplace</a>
+            <a href="/activity" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Activity</a>
             <a href="/assets" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Assets</a>
             <a href="/collections" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Collections</a>
             {isConnected && (
               <>
                 <div className="border-t border-gray-800 my-1" />
+                <a href="/trades" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Trades</a>
                 <a href="/offers" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">My Offers</a>
                 <a href="/blind-offers" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Blind Offers</a>
                 <a href="/blind-offers/received" onClick={() => setShowMobileMenu(false)} className="py-2 hover:text-white transition-colors">Received</a>
