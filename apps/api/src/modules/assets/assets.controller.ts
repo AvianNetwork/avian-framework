@@ -1,4 +1,6 @@
-import { Controller, Get, Param, Query, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Put, Body, UseGuards, Res } from '@nestjs/common';
+import { join } from 'path';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, IsArray, IsUrl } from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
@@ -65,6 +67,25 @@ export class AssetsController {
     @Query('asset') asset: string
   ) {
     return this.assets.getAssetUtxos(address, asset);
+  }
+
+  @Get('ipfs/:hash')
+  @ApiOperation({ summary: 'Serve a locally-cached IPFS image by hash, or the unpinned placeholder' })
+  async serveIpfs(
+    @Param('hash') hash: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const cached = await this.assets.getIpfsCached(hash);
+    if (!cached) {
+      const fallback = join(process.cwd(), 'public', 'unpinned.png');
+      res.set('Content-Type', 'image/png');
+      res.set('Cache-Control', 'public, max-age=60');
+      res.sendFile(fallback);
+      return;
+    }
+    res.set('Content-Type', cached.contentType);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    cached.stream.pipe(res);
   }
 
   @Get(':name')

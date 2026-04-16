@@ -1,8 +1,20 @@
 import { Injectable, Inject, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { createReadStream, existsSync } from 'fs';
+import { open } from 'fs/promises';
+import { join } from 'path';
 import { AvianRpcClient } from '@avian-framework/avian-rpc';
 import type { PrismaClient, Prisma } from '@avian-framework/database';
 import { AVIAN_RPC } from '../../rpc/rpc.module.js';
 import { PRISMA } from '../../database/database.module.js';
+
+/** Detect image mime type from the first 12 bytes of a file */
+function detectMimeType(buf: Buffer): string {
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'image/png';
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'image/gif';
+  if (buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return 'image/webp';
+  return 'application/octet-stream';
+}
 
 @Injectable()
 export class AssetsService {
@@ -222,5 +234,24 @@ export class AssetsService {
       create: { assetName, address, ...data, updatedAt: new Date() },
       update: { ...data, updatedAt: new Date() },
     });
+  }
+
+  // ─── IPFS Image Cache ───────────────────────────────────────────────────────
+
+  async getIpfsCached(hash: string): Promise<{ stream: ReturnType<typeof createReadStream>; contentType: string } | null> {
+    // Validate: only base58 / base32 characters used in CIDv0 / CIDv1 hashes
+    if (!/^[a-zA-Z0-9]+$/.test(hash)) return null;
+    const filePath = join(process.cwd(), 'uploads', 'ipfs', hash);
+    if (!existsSync(filePath)) return null;
+    // Sniff first 12 bytes to determine content-type
+    const fd = await open(filePath, 'r');
+    try {
+      const buf = Buffer.alloc(12);
+      await fd.read(buf, 0, 12, 0);
+      const contentType = detectMimeType(buf);
+      return { stream: createReadStream(filePath), contentType };
+    } finally {
+      await fd.close();
+    }
   }
 }

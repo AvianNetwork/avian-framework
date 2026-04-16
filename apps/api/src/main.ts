@@ -11,7 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Ensure upload directories exist
-  const uploadDirs = ['avatars', 'banners', 'collections'].map((d) =>
+  const uploadDirs = ['avatars', 'banners', 'collections', 'ipfs'].map((d) =>
     join(process.cwd(), 'uploads', d)
   );
   for (const dir of uploadDirs) mkdirSync(dir, { recursive: true });
@@ -19,7 +19,7 @@ async function bootstrap() {
   // Serve uploaded files as static assets
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
   app.setGlobalPrefix('api/v1');
 

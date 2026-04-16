@@ -1,9 +1,20 @@
 import type { AvianRpcClient, AssetData } from '@avian-framework/avian-rpc';
 import type { PrismaClient } from '@avian-framework/database';
+import { existsSync, mkdirSync } from 'fs';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
 
 const SYNC_INTERVAL_MS = 10 * 60 * 1000; // re-sync every 10 minutes
 const BATCH_SIZE = 300;
 const HOLDER_PAGE_SIZE = 300;
+const IPFS_FETCH_TIMEOUT_MS = 10_000;
+
+const IPFS_GATEWAYS = [
+  'https://ipfs.avn.network/ipfs/',
+  'https://ipfs.io/ipfs/',
+  'https://cloudflare-ipfs.com/ipfs/',
+  'https://dweb.link/ipfs/',
+];
 
 export class AssetIndexer {
   private running = false;
@@ -17,6 +28,8 @@ export class AssetIndexer {
     this.running = true;
     console.log('AssetIndexer started — initial sync...');
     await this.syncAllAssets();
+    // Backfill any IPFS images not yet cached (fire-and-forget)
+    this.backfillIpfsCache().catch(() => {/* silently ignore */});
 
     while (this.running) {
       await sleep(SYNC_INTERVAL_MS);
@@ -63,6 +76,11 @@ export class AssetIndexer {
               lastSeenBlock: currentBlock,
             },
           });
+
+          // Fire-and-forget: cache IPFS image locally if not already cached
+          if (asset.has_ipfs && asset.ipfs_hash) {
+            this.cacheIpfsImage(asset.ipfs_hash).catch(() => {/* silently ignore */});
+          }
 
           await this.syncHolders(asset.name, currentBlock);
         }
@@ -126,6 +144,69 @@ export class AssetIndexer {
     } catch (err) {
       // addressindex may not be enabled — log and continue
       console.warn(`AssetIndexer: could not sync holders for ${assetName}:`, (err as Error).message);
+    }
+  }
+
+  /**
+   * On startup, find all assets with hasIpfs=true whose image isn't cached yet
+   * and download them in the background (sequential with small delay to avoid
+   * hammering gateways).
+   */
+  private async backfillIpfsCache() {
+    const uploadsDir = process.env['UPLOADS_DIR'];
+    if (!uploadsDir) return;
+
+    const ipfsDir = join(uploadsDir, 'ipfs');
+    mkdirSync(ipfsDir, { recursive: true });
+
+    const assets = await this.db.asset.findMany({
+      where: { hasIpfs: true, ipfsHash: { not: null } },
+      select: { ipfsHash: true },
+    });
+
+    const uncached = assets.filter((a) => a.ipfsHash && !existsSync(join(ipfsDir, a.ipfsHash)));
+    if (uncached.length === 0) return;
+
+    console.log(`AssetIndexer: backfilling ${uncached.length} uncached IPFS images...`);
+    for (const asset of uncached) {
+      if (!this.running) break;
+      await this.cacheIpfsImage(asset.ipfsHash!);
+      await sleep(200); // small delay between requests
+    }
+    console.log('AssetIndexer: IPFS backfill complete');
+  }
+
+  /**
+   * Download and cache an IPFS image to uploads/ipfs/<hash>.
+   * Only runs if UPLOADS_DIR env var is set (shared Docker volume).
+   * Skips silently if the file is already cached or no gateway responds.
+   */
+  private async cacheIpfsImage(hash: string) {
+    const uploadsDir = process.env['UPLOADS_DIR'];
+    if (!uploadsDir) return;
+
+    const ipfsDir = join(uploadsDir, 'ipfs');
+    const dest = join(ipfsDir, hash);
+    if (existsSync(dest)) return;
+
+    mkdirSync(ipfsDir, { recursive: true });
+
+    for (const gateway of IPFS_GATEWAYS) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), IPFS_FETCH_TIMEOUT_MS);
+        const res = await fetch(`${gateway}${hash}`, { signal: ctrl.signal });
+        clearTimeout(timer);
+        if (!res.ok) continue;
+        const contentType = res.headers.get('content-type') ?? '';
+        if (!contentType.startsWith('image/')) continue;
+        const buf = Buffer.from(await res.arrayBuffer());
+        await writeFile(dest, buf);
+        console.log(`AssetIndexer: cached IPFS image ${hash} (${buf.length} bytes)`);
+        return;
+      } catch {
+        // try next gateway
+      }
     }
   }
 }

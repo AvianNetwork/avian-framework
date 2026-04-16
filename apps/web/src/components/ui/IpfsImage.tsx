@@ -11,43 +11,52 @@ interface Props {
   contain?: boolean;
 }
 
-// Tried in order — first one to succeed wins
-const GATEWAYS = [
-  'https://ipfs.io/ipfs/',
-  'https://ipfs.avn.network/ipfs/',
-  'https://cloudflare-ipfs.com/ipfs/',
-  'https://dweb.link/ipfs/',
-];
+// Index 0 is the local API cache — fast 404 if not cached, no timeout needed.
+// Indices 1+ are public gateways with the 30s timeout.
+const LOCAL_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1');
 
-// IPFS content retrieval can take 20–30 s on first fetch
+function getSources(hash: string): string[] {
+  return [
+    `${LOCAL_BASE}/assets/ipfs/${hash}`,
+    `https://ipfs.avn.network/ipfs/${hash}`,
+    `https://ipfs.io/ipfs/${hash}`,
+    `https://cloudflare-ipfs.com/ipfs/${hash}`,
+    `https://dweb.link/ipfs/${hash}`,
+  ];
+}
+
+// Gateway fetch can take 20–30 s on first resolve
 const GATEWAY_TIMEOUT_MS = 30_000;
 
 export function IpfsImage({ hash, alt, className, expandable, contain }: Props) {
-  const [gatewayIndex, setGatewayIndex] = useState(0);
+  const [sourceIndex, setSourceIndex] = useState(0);
   const [failed, setFailed] = useState(false);
   const [lightbox, setLightbox] = useState(false);
-  // True once the current gateway image fires onLoad — prevents the timeout
-  // from advancing the gateway after a successful (but slow) load.
   const loadedRef = useRef(false);
-  // Stable ref so timeout callbacks always read the latest index — no stale closure.
   const indexRef = useRef(0);
 
+  const sources = getSources(hash);
+
   useEffect(() => {
-    indexRef.current = gatewayIndex;
-    loadedRef.current = false; // reset for this gateway attempt
+    indexRef.current = sourceIndex;
+    loadedRef.current = false;
+
+    // Index 0 is the local API — it either serves immediately or 404s fast.
+    // No timeout needed; onError handles the fast fallback.
+    if (sourceIndex === 0) return;
 
     const timer = setTimeout(() => {
-      if (loadedRef.current) return; // already loaded — do nothing
+      if (loadedRef.current) return;
       const next = indexRef.current + 1;
-      if (next < GATEWAYS.length) {
-        setGatewayIndex(next);
+      if (next < sources.length) {
+        setSourceIndex(next);
       } else {
         setFailed(true);
       }
     }, GATEWAY_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [gatewayIndex]);
+  }, [sourceIndex, sources.length]);
 
   function handleLoad() {
     loadedRef.current = true;
@@ -56,8 +65,8 @@ export function IpfsImage({ hash, alt, className, expandable, contain }: Props) 
   function handleError() {
     loadedRef.current = false;
     const next = indexRef.current + 1;
-    if (next < GATEWAYS.length) {
-      setGatewayIndex(next);
+    if (next < sources.length) {
+      setSourceIndex(next);
     } else {
       setFailed(true);
     }
@@ -66,12 +75,8 @@ export function IpfsImage({ hash, alt, className, expandable, contain }: Props) 
   if (failed) {
     return (
       <div className={`relative w-full aspect-square rounded-lg overflow-hidden bg-gray-800 flex items-center justify-center ${className ?? ''}`}>
-        <div className="flex flex-col items-center gap-2 text-gray-600">
-          <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span className="text-xs">No image</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/unpinned.png" alt="Unpinned" className="w-full h-full object-contain p-2 opacity-70" />
       </div>
     );
   }
@@ -91,7 +96,7 @@ export function IpfsImage({ hash, alt, className, expandable, contain }: Props) 
     return () => { document.body.style.overflow = ''; };
   }, [lightbox]);
 
-  const src = `${GATEWAYS[gatewayIndex]}${hash}`;
+  const src = sources[sourceIndex];
 
   return (
     <>

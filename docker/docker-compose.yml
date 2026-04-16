@@ -55,6 +55,7 @@ services:
       CORS_ORIGIN: ${WEB_URL}
       PORT: 3001
       NODE_ENV: production
+      UPLOADS_DIR: /app/uploads
     volumes:
       - uploads_data:/app/uploads
     ports:
@@ -99,6 +100,9 @@ services:
       AVIAN_RPC_URL: http://avian-node:7896
       AVIAN_RPC_USER: ${AVIAN_RPC_USER}
       AVIAN_RPC_PASS: ${AVIAN_RPC_PASS}
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
