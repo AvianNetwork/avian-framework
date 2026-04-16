@@ -6,7 +6,9 @@ import { ListingDetail } from './ListingDetail';
 // Always fetch fresh data — listing and offer status change frequently
 export const dynamic = 'force-dynamic';
 
-const API_BASE = process.env['API_INTERNAL_URL'] ?? 'http://localhost:4000/api/v1';
+const API_INTERNAL = process.env['API_INTERNAL_URL'] ?? 'http://localhost:4000/api/v1';
+// Public URL used in OG tags — must be reachable by social media crawlers
+const API_PUBLIC = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/api/v1';
 
 export async function generateMetadata({
   params,
@@ -19,14 +21,13 @@ export async function generateMetadata({
     const amount = listing.assetAmount === 1 ? '' : ` ×${listing.assetAmount}`;
     const title = `${listing.assetName}${amount} — ${listing.priceAvn.toLocaleString()} AVN`;
     const description = `Buy ${listing.assetName}${amount} on Avian Marketplace for ${listing.priceAvn.toLocaleString()} AVN. Non-custodial PSBT trade.`;
-    const imageUrl = `${API_BASE}/assets/ipfs/`;
 
-    // Fetch the asset to get its IPFS hash
+    // Fetch asset data via internal URL, but build the OG image URL with the public URL
     let ogImage: string | undefined;
     try {
-      const asset = (await fetch(`${API_BASE}/assets/${encodeURIComponent(listing.assetName)}`).then((r) => r.json())) as { ipfsHash?: string | null };
+      const asset = (await fetch(`${API_INTERNAL}/assets/${encodeURIComponent(listing.assetName)}`).then((r) => r.json())) as { ipfsHash?: string | null };
       if (asset.ipfsHash) {
-        ogImage = `${API_BASE}/assets/ipfs/${asset.ipfsHash}`;
+        ogImage = `${API_PUBLIC}/assets/ipfs/${asset.ipfsHash}`;
       }
     } catch { /* no image */ }
 
