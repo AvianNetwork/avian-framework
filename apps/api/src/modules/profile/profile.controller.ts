@@ -17,26 +17,46 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, Length, Matches } from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { ProfileService } from './profile.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 
 class UpdateProfileDto {
+  @ApiProperty({ required: false, example: 'satoshi', description: 'Unique username (3-30 chars, alphanumeric/_/-)' })
   @IsOptional() @IsString() @Length(3, 30) @Matches(/^[a-zA-Z0-9_-]+$/) username?: string;
+
+  @ApiProperty({ required: false, example: 'Satoshi Nakamoto' })
   @IsOptional() @IsString() @Length(1, 60) displayName?: string;
+
+  @ApiProperty({ required: false, example: 'Building on Avian Network.' })
   @IsOptional() @IsString() @Length(0, 500) bio?: string;
+
+  @ApiProperty({ required: false, example: 'https://example.com' })
   @IsOptional() @IsString() website?: string;
+
+  @ApiProperty({ required: false, example: 'aviannetwork' })
   @IsOptional() @IsString() twitterHandle?: string;
+
+  @ApiProperty({ required: false, example: 'aviannetwork' })
   @IsOptional() @IsString() discordHandle?: string;
+
+  @ApiProperty({ required: false, example: '50% 30%', description: 'CSS background-position value for banner crop' })
   @IsOptional() @IsString() @Matches(/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/) bannerPosition?: string;
 }
 
 class LinkWalletDto {
+  @ApiProperty({ example: 'RAvianAddress1234567890abcdefghijklmnopqrst', description: 'The new wallet address to link' })
   @IsString() newAddress!: string;
+
+  @ApiProperty({ example: 'avian-link:abc123:1713600000000', description: 'Challenge string from POST /profile/wallets/challenge' })
   @IsString() challenge!: string;
+
+  @ApiProperty({ example: 'H1a2b3c4d5e6f7...', description: 'Message signed by the new wallet private key' })
   @IsString() signature!: string;
+
+  @ApiProperty({ required: false, example: 'Hardware wallet' })
   @IsOptional() @IsString() label?: string;
 }
 

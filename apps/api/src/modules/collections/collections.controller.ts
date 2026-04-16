@@ -20,30 +20,44 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, IsNumber, Min, Max, IsArray } from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { CollectionsService } from './collections.service.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 
 class CreateCollectionDto {
+  @ApiProperty({ example: 'Avian Genesis Series' })
   @IsString() name!: string;
+
+  @ApiProperty({ required: false, example: 'The original Avian Network collection.' })
   @IsOptional() @IsString() description?: string;
+
+  @ApiProperty({ required: false, example: 'https://avn.network' })
   @IsOptional() @IsString() website?: string;
+
+  @ApiProperty({ required: false, example: 'aviannetwork' })
   @IsOptional() @IsString() twitterHandle?: string;
+
+  @ApiProperty({ required: false, example: 'aviannetwork' })
   @IsOptional() @IsString() discordHandle?: string;
+
+  @ApiProperty({ required: false, example: 5, description: 'Royalty percentage (0–15)' })
   @IsOptional() @IsNumber() @Min(0) @Max(15) royaltyPercent?: number;
 }
 
 class UpdateCollectionDto extends CreateCollectionDto {
+  @ApiProperty({ required: false, example: 'Avian Genesis Series' })
   @IsOptional() declare name: string;
 }
 
 class AddItemDto {
+  @ApiProperty({ example: 'AVNPRATA', description: 'Asset name to add to the collection' })
   @IsString() assetName!: string;
 }
 
 class ReorderDto {
+  @ApiProperty({ example: ['AVNPRATA', 'AVNOURO', 'AVNTOTHEMOON'], description: 'Asset names in desired display order' })
   @IsArray() @IsString({ each: true }) order!: string[];
 }
 
