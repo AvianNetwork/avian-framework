@@ -379,6 +379,11 @@ export class OffersService {
           relatedOfferId: id,
         },
       }),
+      // Mark any parent blind offer as COMPLETED too
+      this.db.blindOffer.updateMany({
+        where: { offerId: id, status: 'ACCEPTED' },
+        data: { status: 'COMPLETED' },
+      }),
     ]);
 
     // Re-sync asset holders from RPC so the Owner badge updates immediately
