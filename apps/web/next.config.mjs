@@ -1,4 +1,11 @@
 /** @type {import('next').NextConfig} */
+
+// Derive the API hostname from the build-time env var so image optimisation
+// works regardless of which domain is configured for the API.
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+const apiHostname = new URL(apiUrl).hostname;
+const apiProtocol = new URL(apiUrl).protocol.replace(':', '');
+
 const nextConfig = {
   output: 'standalone',
   transpilePackages: ['@avian-framework/shared'],
@@ -10,9 +17,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'dweb.link', pathname: '/ipfs/**' },
       { protocol: 'https', hostname: 'gateway.pinata.cloud', pathname: '/ipfs/**' },
       { protocol: 'https', hostname: 'ipfs.avn.network', pathname: '/ipfs/**' },
-      // Locally uploaded assets
-      { protocol: 'http', hostname: 'localhost', port: '4000', pathname: '/uploads/**' },
-      { protocol: 'https', hostname: 'api.psbt.avn.network', pathname: '/uploads/**' },
+      // Uploaded assets — derived from NEXT_PUBLIC_API_URL so any API domain works
+      { protocol: apiProtocol, hostname: apiHostname, pathname: '/uploads/**' },
     ],
   },
 };
