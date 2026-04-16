@@ -14,13 +14,16 @@ interface ConnectWalletModalProps {
 }
 
 export function ConnectWalletModal({ onClose, prefillAddress }: ConnectWalletModalProps) {
-  const { connect } = useWallet();
+  const { connect, authAddresses } = useWallet();
   const [step, setStep] = useState<Step>(prefillAddress ? 'address' : 'address');
   const [address, setAddress] = useState(prefillAddress ?? '');
   const [challenge, setChallenge] = useState('');
   const [signature, setSignature] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const short = (addr: string) => `${addr.slice(0, 8)}…${addr.slice(-6)}`;
+
 
   // Close on Escape
   useEffect(() => {
@@ -31,15 +34,16 @@ export function ConnectWalletModal({ onClose, prefillAddress }: ConnectWalletMod
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  async function handleRequestChallenge() {
-    if (!address.trim()) {
+  async function handleRequestChallengeFor(addr: string) {
+    if (!addr.trim()) {
       setError('Please enter your wallet address.');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      const result = await api.challenge(address.trim());
+      const result = await api.challenge(addr.trim());
+      setAddress(addr.trim());
       setChallenge(result.challenge);
       setStep('sign');
     } catch (err: unknown) {
@@ -47,6 +51,10 @@ export function ConnectWalletModal({ onClose, prefillAddress }: ConnectWalletMod
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleRequestChallenge() {
+    await handleRequestChallengeFor(address);
   }
 
   async function handleVerify() {
@@ -89,10 +97,45 @@ export function ConnectWalletModal({ onClose, prefillAddress }: ConnectWalletMod
         {/* Step 1: Enter address */}
         {step === 'address' && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-400">
-              Enter your Avian wallet address to connect. You will sign a challenge
-              message to prove ownership.
-            </p>
+            {authAddresses.length > 0 && !prefillAddress && (
+              <>
+                <p className="text-sm text-gray-400">
+                  Select a previously connected address or enter a new one.
+                </p>
+                <div className="space-y-1.5">
+                  {authAddresses.map((addr) => (
+                    <button
+                      key={addr}
+                      onClick={() => { setAddress(addr); handleRequestChallengeFor(addr); }}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm font-mono transition-colors ${
+                        address === addr
+                          ? 'border-avian-500 bg-avian-900/30 text-avian-300'
+                          : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-500 hover:bg-gray-750'
+                      }`}
+                    >
+                      {addr}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <div className="flex-1 border-t border-gray-700" />
+                  or enter a new address
+                  <div className="flex-1 border-t border-gray-700" />
+                </div>
+              </>
+            )}
+            {!authAddresses.length && !prefillAddress && (
+              <p className="text-sm text-gray-400">
+                Enter your Avian wallet address to connect. You will sign a challenge
+                message to prove ownership.
+              </p>
+            )}
+            {prefillAddress && (
+              <p className="text-sm text-gray-400">
+                Enter your Avian wallet address to connect. You will sign a challenge
+                message to prove ownership.
+              </p>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Wallet Address

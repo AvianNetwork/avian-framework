@@ -12,6 +12,7 @@ import { ConnectWalletModal } from '../components/ConnectWalletModal';
 
 const STORAGE_KEY = 'avian_wallet';
 const KNOWN_KEY = 'avian_known_addresses';
+const AUTH_KEY = 'avian_auth_addresses';
 const SESSIONS_KEY = 'avian_sessions';
 
 interface WalletState {
@@ -25,6 +26,8 @@ interface WalletContextValue {
   token: string | null;
   isConnected: boolean;
   knownAddresses: string[];
+  /** Addresses the user has actually authenticated with (not linked wallets) */
+  authAddresses: string[];
   /** Current user's addresses only: primary + linked wallets from their profile */
   linkedAddresses: string[];
   /** Addresses with a valid non-expired session — the only ones that can be switched to */
@@ -42,6 +45,7 @@ const WalletContext = createContext<WalletContextValue>({
   token: null,
   isConnected: false,
   knownAddresses: [],
+  authAddresses: [],
   linkedAddresses: [],
   switchableAddresses: [],
   connect: async () => {},
@@ -64,6 +68,19 @@ function saveKnownAddresses(addresses: string[]) {
   localStorage.setItem(KNOWN_KEY, JSON.stringify(addresses));
 }
 
+function loadAuthAddresses(): string[] {
+  try {
+    const stored = localStorage.getItem(AUTH_KEY);
+    return stored ? (JSON.parse(stored) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAuthAddresses(addresses: string[]) {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(addresses));
+}
+
 function loadSessions(): Record<string, WalletState> {
   try {
     const stored = sessionStorage.getItem(SESSIONS_KEY);
@@ -80,6 +97,7 @@ function saveSessions(sessions: Record<string, WalletState>) {
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [knownAddresses, setKnownAddresses] = useState<string[]>([]);
+  const [authAddresses, setAuthAddresses] = useState<string[]>([]);
   const [linkedAddresses, setLinkedAddresses] = useState<string[]>([]);
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [connectModalPrefill, setConnectModalPrefill] = useState<string | undefined>();
@@ -92,6 +110,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   // Restore from storage on mount
   useEffect(() => {
     setKnownAddresses(loadKnownAddresses());
+    setAuthAddresses(loadAuthAddresses());
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -127,6 +146,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setKnownAddresses((prev) => {
         const updated = [address, ...prev.filter((a) => a !== address)];
         saveKnownAddresses(updated);
+        return updated;
+      });
+
+      // Track as an auth address (only addresses used to sign in, not linked wallets)
+      setAuthAddresses((prev) => {
+        const updated = [address, ...prev.filter((a) => a !== address)];
+        saveAuthAddresses(updated);
         return updated;
       });
     },
@@ -192,6 +218,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       saveKnownAddresses(updated);
       return updated;
     });
+
+    setAuthAddresses((prev) => {
+      const updated = prev.filter((a) => a !== address);
+      saveAuthAddresses(updated);
+      return updated;
+    });
   }, []);
 
   return (
@@ -201,6 +233,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         token: wallet?.token ?? null,
         isConnected: !!wallet,
         knownAddresses,
+        authAddresses,
         linkedAddresses,
         switchableAddresses: Object.entries(loadSessions())
           .filter(([addr, s]) => addr !== wallet?.address && new Date(s.expiresAt) > new Date())
