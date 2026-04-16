@@ -1,8 +1,43 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
 import { CollectionDetail } from './CollectionDetail';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const collection = (await api.getCollection(slug)) as CollectionData;
+    const title = `${collection.name} — Avian Marketplace`;
+    const description = collection.description ?? `Browse the ${collection.name} collection on Avian Marketplace.`;
+    const ogImage = collection.bannerUrl ?? collection.avatarUrl ?? undefined;
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url: `/collections/${slug}`,
+        siteName: 'Avian Marketplace',
+        ...(ogImage ? { images: [{ url: ogImage, alt: collection.name }] } : {}),
+        type: 'website',
+      },
+      twitter: {
+        card: ogImage ? 'summary_large_image' : 'summary',
+        title,
+        description,
+        ...(ogImage ? { images: [ogImage] } : {}),
+      },
+    };
+  } catch {
+    return { title: 'Collection — Avian Marketplace' };
+  }
+}
 
 interface CollectionItem {
   collectionId: string;

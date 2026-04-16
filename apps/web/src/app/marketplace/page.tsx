@@ -1,9 +1,15 @@
+import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
 import { IpfsImage } from '@/components/ui/IpfsImage';
 import { MarketplaceFilters } from '@/components/marketplace/MarketplaceFilters';
 import { Suspense } from 'react';
 import { Search, Store } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Marketplace',
+  description: 'Browse active asset listings on Avian Marketplace. Buy and sell Avian assets with non-custodial PSBT trades.',
+};
 
 type SearchParams = {
   asset?: string;

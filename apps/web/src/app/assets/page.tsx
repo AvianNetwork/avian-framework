@@ -1,6 +1,12 @@
+import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { AssetGrid } from '@/components/assets/AssetGrid';
 import { AssetSearchForm } from '@/components/assets/AssetSearchForm';
+
+export const metadata: Metadata = {
+  title: 'Assets',
+  description: 'Browse all assets on the Avian blockchain — including IPFS-backed NFTs and reissuable tokens.',
+};
 
 export default async function AssetsPage({
   searchParams,

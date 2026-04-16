@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,6 +9,41 @@ import { ProfileWalletsSection } from '@/components/profile/ProfileWalletsSectio
 import { WatchButton } from '@/components/profile/WatchButton';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  try {
+    const profile = (await api.getPublicProfile(username)) as PublicProfile;
+    const name = profile.displayName ?? profile.username;
+    const title = `${name} — Avian Marketplace`;
+    const description = profile.bio ?? `View ${name}'s listings, collections, and trade history on Avian Marketplace.`;
+    const ogImage = profile.bannerUrl ?? profile.avatarUrl ?? undefined;
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url: `/users/${username}`,
+        siteName: 'Avian Marketplace',
+        ...(ogImage ? { images: [{ url: ogImage, alt: name }] } : {}),
+        type: 'profile',
+      },
+      twitter: {
+        card: ogImage ? 'summary_large_image' : 'summary',
+        title,
+        description,
+        ...(ogImage ? { images: [ogImage] } : {}),
+      },
+    };
+  } catch {
+    return { title: `${username} — Avian Marketplace` };
+  }
+}
 
 interface PublicProfile {
   id: string;

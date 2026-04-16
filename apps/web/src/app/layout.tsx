@@ -6,9 +6,16 @@ import { SyncBanner } from '../components/ui/SyncBanner';
 import { Toaster } from '../components/ui/Toaster';
 
 export const metadata: Metadata = {
-  title: 'Avian Marketplace',
+  title: {
+    default: 'Avian Marketplace',
+    template: '%s | Avian Marketplace',
+  },
   description: 'Non-custodial asset marketplace powered by Avian blockchain and PSBT',
   icons: { icon: '/avian-logo.png' },
+  openGraph: {
+    siteName: 'Avian Marketplace',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
